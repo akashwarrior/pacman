@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+option go_package = "/message";
+
+// Position struct
+message Position {
+  double x = 1;
+  double y = 2;
+}
+
+// Bullet struct
+message Bullet {
+  double id = 1;
+  Position position = 2;
+  double rotation = 3;
+  bool expired = 4;
+}
+
+// Obstacle struct
+message Obstacle {
+  uint32 x = 1;
+  uint32 y = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+}
+
+// GrassPatch struct
+message GrassPatch {
+  uint32 x = 1;
+  uint32 y = 2;
+  uint32 radius = 3;
+}
+
+// GameMap struct
+message GameMap {
+  repeated Obstacle obstacles = 1;
+  repeated GrassPatch grass_patches = 2;
+}
+
+// Player struct
+message Player {
+  int32 id = 1;
+  string name = 2;
+  string color = 3;
+  Position position = 4;
+  bool is_ready = 5;
+  bool in_grass = 6;
+  double rotation = 7;
+  int32 kills = 8;
+  int32 health = 9;
+}
+
+// Payload struct
+message Payload {
+  repeated Player players = 1;
+  optional Position position = 2;
+  optional Bullet bullet = 3;
+  optional GameMap map = 4;
+  optional bool is_ready = 5;
+  optional bool in_grass = 6;
+  optional int32 health = 7;
+  optional double rotation = 8;
+  optional int32 kills = 9;
+}
+
+// Message struct
+message Message {
+  optional int32 id = 1;
+  string event = 2;
+  uint64 time = 3;
+  optional Payload payload = 4;
+}
