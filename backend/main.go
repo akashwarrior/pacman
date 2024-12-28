@@ -19,7 +19,7 @@ func main() {
 	// Frontend URLs that are allowed to access the backend
 	allowedOrigins := []string{
 		"https://battle-arena-chi.vercel.app",
-		"https://battle-arena-akashwarriors-projects.vercel.app/",
+		"https://battle-arena-akashwarriors-projects.vercel.app",
 		"https://battle-arena-git-main-akashwarriors-projects.vercel.app",
 		"https://battle-arena-fyvpl5qg6-akashwarriors-projects.vercel.app",
 	}
@@ -27,8 +27,8 @@ func main() {
 	// Wrap the mux with CORS support
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins(allowedOrigins),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "application/json"}),
 	)(mux)
 
 	http.ListenAndServe(":3000", corsHandler)
