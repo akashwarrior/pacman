@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gobwas/ws"
-	"github.com/gorilla/handlers"
 )
 
 func main() {
@@ -16,21 +15,29 @@ func main() {
 	mux.HandleFunc("POST /api/rooms/join", joinRoom)
 	mux.HandleFunc("GET /play", playGame)
 
-	// Frontend URLs that are allowed to access the backend
-	allowedOrigins := []string{
-		"https://battle-arena-chi.vercel.app",
-		"https://battle-arena-akashwarriors-projects.vercel.app",
-		"https://battle-arena-git-main-akashwarriors-projects.vercel.app",
-		"https://battle-arena-fyvpl5qg6-akashwarriors-projects.vercel.app",
-	}
+	handler := enableCORS(mux)
 
-	// Wrap the mux with CORS support
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins(allowedOrigins),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-	)(mux)
+	// Start the HTTP server
+	http.ListenAndServe(":8080", handler)
+}
 
-	http.ListenAndServe(":3000", corsHandler)
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// "https://battle-arena-git-main-akashwarriors-projects.vercel.app",
+		w.Header().Set("Access-Control-Allow-Origin", "https://battle-arena-chi.vercel.app")
+		// Allow certain HTTP methods (GET, POST, PUT, DELETE, etc.)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		// Allow certain headers (adjust as necessary)
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// If the method is OPTIONS, return 200 to handle pre-flight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		// Proceed to the next handler
+		next.ServeHTTP(w, r)
+	})
 }
 
 func createRoom(w http.ResponseWriter, r *http.Request) {
