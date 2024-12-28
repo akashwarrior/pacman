@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ColorPicker } from "./ColorPicker";
 import { Input } from "./ui/Input";
 
@@ -8,7 +8,7 @@ export function PlayerPreview({ nameRef, colorRef }: { nameRef: React.RefObject<
   const fireIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const bulletsRef = useRef<{ x: number; y: number }[]>([]);
 
-  const renderPlayer = (ctx: CanvasRenderingContext2D) => {
+  const renderPlayer = useCallback((ctx: CanvasRenderingContext2D) => {
     const color = colorRef.current;
     const name = nameRef.current?.value || "Player";
 
@@ -52,7 +52,7 @@ export function PlayerPreview({ nameRef, colorRef }: { nameRef: React.RefObject<
       cancelAnimationFrame(animationRef.current);
       animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
     }
-  };
+  }, [colorRef, nameRef]);
 
   const handleMouseEnter = () => {
     if (fireIntervalRef.current) return;
@@ -102,7 +102,7 @@ export function PlayerPreview({ nameRef, colorRef }: { nameRef: React.RefObject<
       animationRef.current = 0;
       fireIntervalRef.current = null;
     };
-  }, []);
+  }, [renderPlayer]);
 
   return (
     <div className="space-y-4">

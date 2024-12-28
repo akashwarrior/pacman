@@ -20,7 +20,7 @@ func main() {
 	handler := enableCORS(mux)
 
 	// Start the HTTP server
-	http.ListenAndServe(":3000", handler)
+	http.ListenAndServe(":3001", handler)
 }
 
 func enableCORS(next http.Handler) http.Handler {

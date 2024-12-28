@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { socketManager } from "@/services/sockerManager";
 import { SOCKET_EVENT } from "@/types";
 import { Payload, Position } from "@/types/message";
@@ -18,12 +18,13 @@ class RoomManager {
 
   public async createRoom(player: { Name: string; Color: string }, retryCount: number): Promise<number | null> {
     try {
-      const res = await axios.post("http://localhost:3000/api/rooms/create", player);
+      const res = await axios.post(`https://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/create`, player);
       const { playerId, roomId } = res.data;
       this.PlayerId = playerId;
       socketManager.connect(roomId);
       return roomId;
-    } catch (err: AxiosError | any) {
+      // @ts-expect-error type error
+    } catch (err: AxiosError) {
       if (err.status === 400 && retryCount <= 3) {
         this.createRoom(player, retryCount + 1);
       }
@@ -34,12 +35,13 @@ class RoomManager {
 
   public async joinRoom(player: { Name: string; Color: string }, roomId: number, retryCount: number): Promise<number | null> {
     try {
-      const res = await axios.post(`http://localhost:3000/api/rooms/join?roomId=${roomId}`, player);
+      const res = await axios.post(`https://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/join?roomId=${roomId}`, player);
       const { playerId } = res.data;
       this.PlayerId = playerId;
       socketManager.connect(roomId);
       return roomId;
-    } catch (err: AxiosError | any) {
+      // @ts-expect-error type error
+    } catch (err: AxiosError) {
       if (err.status === 400 && retryCount < 2) {
         this.joinRoom(player, roomId, retryCount + 1);
       }

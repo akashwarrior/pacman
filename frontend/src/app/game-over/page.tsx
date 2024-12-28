@@ -1,16 +1,16 @@
-'use client'
-
-import { roomManager } from '@/services/roomManager';
 import { motion } from 'framer-motion';
-import { Trophy, RotateCcw } from 'lucide-react';
-import { redirect, useSearchParams } from 'next/navigation';
+import { Trophy, RotateCcw, Link } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
-roomManager.leaveRoom();
+export default async function GameOver({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    let { playerId, score } = await searchParams;
+    score = Number.isNaN(Number(score)) ? "0" : score;
 
-export default function GameOver() {
-    const searchParams = useSearchParams()
-    const score = Number(searchParams.get('Kills')) || 0
-    const playerId = searchParams.get('ID')
+    if (Number.isNaN(Number(playerId)) || playerId === undefined) {
+        redirect('/');
+    }
+
+    playerId = playerId as string;
 
     return (
         <motion.div
@@ -42,20 +42,19 @@ export default function GameOver() {
                         </span>
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                            redirect('/')
-                        }}
-                        className="group relative w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium transition-all duration-200 hover:from-blue-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    >
-                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="flex items-center justify-center gap-2">
-                            <RotateCcw className="w-5 h-5" />
-                            <span>Play Again</span>
-                        </div>
-                    </motion.button>
+                    <Link href="/">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="group relative w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium transition-all duration-200 hover:from-blue-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center justify-center gap-2">
+                                <RotateCcw className="w-5 h-5" />
+                                <span>Play Again</span>
+                            </div>
+                        </motion.button>
+                    </Link>
                 </div>
             </motion.div>
         </motion.div>

@@ -74,5 +74,5 @@ export function useGameControls() {
       }
       pressedKeys.clear();
     };
-  }, [updateMovement]);
+  }, [updateMovement, fire]);
 }

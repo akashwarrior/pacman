@@ -32,8 +32,8 @@ export function renderGame(ctx: CanvasRenderingContext2D, gameState: GameState) 
     return;
   }
 
-  const cameraX = Math.max(0, Math.min(player.position?.x! - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH));
-  const cameraY = Math.max(0, Math.min(player.position?.y! - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT));
+  const cameraX = Math.max(0, Math.min(player.position!.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH));
+  const cameraY = Math.max(0, Math.min(player.position!.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT));
 
   ctx.clearRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
@@ -87,13 +87,13 @@ export function renderGame(ctx: CanvasRenderingContext2D, gameState: GameState) 
   players.forEach((player) => {
     // Only draw players that are visible in the viewport
     if (
-      player.position?.x! + PLAYER_SIZE > cameraX &&
-      player.position?.x! - PLAYER_SIZE < cameraX + VIEWPORT_WIDTH &&
-      player.position?.y! + PLAYER_SIZE > cameraY &&
-      player.position?.y! - PLAYER_SIZE < cameraY + VIEWPORT_HEIGHT
+      player.position!.x + PLAYER_SIZE > cameraX &&
+      player.position!.x - PLAYER_SIZE < cameraX + VIEWPORT_WIDTH &&
+      player.position!.y + PLAYER_SIZE > cameraY &&
+      player.position!.y - PLAYER_SIZE < cameraY + VIEWPORT_HEIGHT
     ) {
       ctx.save();
-      ctx.translate(player.position?.x!, player.position?.y!);
+      ctx.translate(player.position!.x, player.position!.y);
       ctx.rotate(player.rotation!);
 
       // Draw the player body (rotated)
@@ -138,15 +138,15 @@ export function renderGame(ctx: CanvasRenderingContext2D, gameState: GameState) 
   bullets.forEach((bullet) => {
     // Only draw bullets that are visible in the viewport
     if (
-      bullet.position?.x! + BULLET_SIZE > cameraX &&
-      bullet.position?.x! - BULLET_SIZE < cameraX + VIEWPORT_WIDTH &&
-      bullet.position?.y! + BULLET_SIZE > cameraY &&
-      bullet.position?.y! - BULLET_SIZE < cameraY + VIEWPORT_HEIGHT
+      bullet.position!.x + BULLET_SIZE > cameraX &&
+      bullet.position!.x - BULLET_SIZE < cameraX + VIEWPORT_WIDTH &&
+      bullet.position!.y + BULLET_SIZE > cameraY &&
+      bullet.position!.y - BULLET_SIZE < cameraY + VIEWPORT_HEIGHT
     ) {
 
 
       ctx.save();
-      ctx.translate(bullet.position?.x!, bullet.position?.y!);
+      ctx.translate(bullet.position!.x, bullet.position!.y);
       ctx.rotate(bullet.rotation!);
 
       const gradient = ctx.createLinearGradient(-BULLET_SIZE * 4, 0, 0, 0);

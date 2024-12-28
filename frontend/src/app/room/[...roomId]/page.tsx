@@ -5,24 +5,28 @@ import { Crown, Users, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SOCKET_EVENT } from "@/types";
-import { IPayload, IPlayer } from "../../../types/message";
+import { Payload, Player } from "../../../types/message";
 
 export default function Room() {
     const router = useRouter();
     const { roomId } = useParams<{ roomId: string }>()
-    const [players, setPlayers] = useState<IPlayer[]>([]);
+    const [players, setPlayers] = useState<Player[]>([]);
+
+    console.log(roomId);
+    console.log(players);
 
     useEffect(() => {
         if (roomManager.PlayerId === null || Number.isNaN(Number(roomId[0]))) {
             router.replace('/');
         }
 
-        const handleJoin = ({ players }: IPayload) => {
+        const handleJoin = ({ players }: Payload) => {
             if (!players) return;
             setPlayers(players);
         };
 
-        const handleReady = ({ isReady }: IPayload, ID?: number) => {
+        const handleReady = ({ isReady }: Payload, ID?: number) => {
+            if (!ID || !isReady) return;
             setPlayers((prev) =>
                 prev.map((p) => p.id === ID ? { ...p, isReady } : p)
             );
@@ -52,7 +56,7 @@ export default function Room() {
             roomManager.offEvent(SOCKET_EVENT.START);
             roomManager.offEvent(SOCKET_EVENT.KICK);
         };
-    }, [router]);
+    }, [router, roomId]);
 
     const handleReady = ({ isReady }: { isReady: boolean }) => {
         roomManager.setPlayerReady({ isReady });

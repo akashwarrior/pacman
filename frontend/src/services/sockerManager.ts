@@ -24,7 +24,7 @@ class SocketManager {
     }
 
     this.socket = new WebSocket(
-      `ws://localhost:3000/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
+      `wss://${process.env.NEXT_PUBLIC_BACKEND_URL}/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
     );
 
     this.socket.binaryType = "arraybuffer";
@@ -75,6 +75,7 @@ class SocketManager {
   public send(event: string, payload: Partial<Payload>, id?: number): void {
     if (!this.socket) return;
     const time = new Date().getTime();
+    console.log("Sending", event, payload);
     const buffer = Message.encode({ event, time, id, payload: { ...payload, players: [] } }).finish();
     this.socket.send(buffer);
   }

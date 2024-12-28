@@ -1,11 +1,11 @@
-import * as React from 'react';
+import { forwardRef } from "react";
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ label, type, className, ...props }, ref) => {
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+    function inputForewarding({ label, type, className, ...props }, ref) {
         return (
             <div>
                 <label className="block text-sm font-medium text-indigo-300/80 mb-2">
@@ -13,6 +13,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 </label>
 
                 <input
+                    name='input'
                     type={type}
                     className={className}
                     ref={ref}
