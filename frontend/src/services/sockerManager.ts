@@ -6,7 +6,7 @@ class SocketManager {
   private static instance: SocketManager;
   private eventListeners: { [event: string]: (data: Payload, ID?: number) => void } = {};
   private missedEvents: { [event: string]: Message } = {};
-  private timeTook: number = 0;
+  // private timeTook: number = 0;
 
   private constructor() { }
 
@@ -34,13 +34,12 @@ class SocketManager {
       try {
         const now = new Date().getTime();
         data = Message.decode(new Uint8Array(event.data));
-        if (data.time) {
-          const timeTook = now - (data.time as number);
-          this.timeTook = Math.max(this.timeTook, timeTook);
-          console.log("Time took:", timeTook);
-        }
-        console.log("data", data);
-        console.log("Max time took:", this.timeTook);
+        // if (data.time) {
+        //   const timeTook = now - (data.time as number);
+        //   this.timeTook = Math.max(this.timeTook, timeTook);
+        //   console.log("Time took:", timeTook);
+        // }
+        // console.log("Max time took:", this.timeTook);
       } catch (error) {
         console.log("Failed to parse message:", error);
         return;
@@ -75,7 +74,6 @@ class SocketManager {
   public send(event: string, payload: Partial<Payload>, id?: number): void {
     if (!this.socket) return;
     const time = new Date().getTime();
-    console.log("Sending", event, payload);
     const buffer = Message.encode({ event, time, id, payload: { ...payload, players: [] } }).finish();
     this.socket.send(buffer);
   }

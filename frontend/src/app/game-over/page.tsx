@@ -1,16 +1,8 @@
 import { motion } from 'framer-motion';
 import { Trophy, RotateCcw, Link } from 'lucide-react';
-import { redirect } from 'next/navigation';
 
 export default async function GameOver({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-    let { playerId, score } = await searchParams;
-    score = Number.isNaN(Number(score)) ? "0" : score;
-
-    if (Number.isNaN(Number(playerId)) || playerId === undefined) {
-        redirect('/');
-    }
-
-    playerId = playerId as string;
+    const { playerId, score } = await searchParams;
 
     return (
         <motion.div
@@ -38,7 +30,7 @@ export default async function GameOver({ searchParams }: { searchParams: Promise
 
                     <div className="bg-gray-900/50 rounded-xl p-6 mb-8">
                         <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 leading-tight">
-                            Player ID -  {playerId}<br /> Kills - {score}
+                            Player ID -  {playerId}<br /> Kills - {Number.isNaN(score) ? 0 : score}
                         </span>
                     </div>
 

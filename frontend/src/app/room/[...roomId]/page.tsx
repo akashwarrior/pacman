@@ -12,9 +12,6 @@ export default function Room() {
     const { roomId } = useParams<{ roomId: string }>()
     const [players, setPlayers] = useState<Player[]>([]);
 
-    console.log(roomId);
-    console.log(players);
-
     useEffect(() => {
         if (roomManager.PlayerId === null || Number.isNaN(Number(roomId[0]))) {
             router.replace('/');

@@ -18,7 +18,6 @@ export function useGameState() {
   useEffect(() => {
     // SPAWN event
     roomManager.onEvent(SOCKET_EVENT.SPAWN, ({ map, players }: Payload) => {
-      console.log('SPAWN', map, players);
       setGameState({
         map: map!,
         players: players!,

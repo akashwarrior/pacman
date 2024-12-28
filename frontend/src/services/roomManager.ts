@@ -23,12 +23,11 @@ class RoomManager {
       this.PlayerId = playerId;
       socketManager.connect(roomId);
       return roomId;
-      // @ts-expect-error type error
+      // @ts-expect-error type error  
     } catch (err: AxiosError) {
       if (err.status === 400 && retryCount <= 3) {
         this.createRoom(player, retryCount + 1);
       }
-      console.log("Failed to create room retry" + retryCount, err);
       return null;
     }
   }
@@ -45,7 +44,6 @@ class RoomManager {
       if (err.status === 400 && retryCount < 2) {
         this.joinRoom(player, roomId, retryCount + 1);
       }
-      console.log("Failed to join room retry" + retryCount, err);
       return null;
     }
   }
