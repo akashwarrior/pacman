@@ -32,7 +32,7 @@ class SocketManager {
     this.socket.onmessage = (event) => {
       let data: Message;
       try {
-        const now = new Date().getTime();
+        // const now = new Date().getTime();
         data = Message.decode(new Uint8Array(event.data));
         // if (data.time) {
         //   const timeTook = now - (data.time as number);
