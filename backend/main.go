@@ -28,7 +28,6 @@ func main() {
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins(allowedOrigins),
 		handlers.AllowedMethods([]string{"GET", "POST"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "application/json"}),
 	)(mux)
 
 	http.ListenAndServe(":3000", corsHandler)
