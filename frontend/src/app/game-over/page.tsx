@@ -1,19 +1,25 @@
-import { motion } from 'framer-motion';
-import { Trophy, RotateCcw, Link } from 'lucide-react';
+'use client';
 
-export default async function GameOver({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-    const { playerId, score } = await searchParams;
+import Link from 'next/link';
+import { motion } from 'motion/react';
+import { Trophy, RotateCcw } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+
+export default function GameOver() {
+    const searchParams = useSearchParams();
+    const playerId = searchParams.get('ID');
+    const score = Number(searchParams.get('Kills'));
 
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 w-full h-fit"
+            className="inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 w-full h-screen"
         >
             <motion.div
                 initial={{ y: 20 }}
                 animate={{ y: 0 }}
-                className="bg-gray-800/90 border border-gray-700 p-8 rounded-2xl shadow-2xl max-w-md w-full"
+                className="bg-gray-800/90 border border-gray-700 p-8 rounded-2xl shadow-2xl max-w-md w-full h-fit"
             >
                 <div className="text-center">
                     <motion.div
