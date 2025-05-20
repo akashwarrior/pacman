@@ -24,7 +24,7 @@ class SocketManager {
     }
 
     this.socket = new WebSocket(
-      `ws://${process.env.NEXT_PUBLIC_BACKEND_URL}/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
+      `${process.env.NEXT_PUBLIC_WEB_SOCKET_URL}/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
     );
 
     this.socket.binaryType = "arraybuffer";
