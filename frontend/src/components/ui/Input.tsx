@@ -1,25 +1,30 @@
-import { forwardRef } from "react";
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label: string;
-}
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> { }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-    function inputForewarding({ label, type, className, ...props }, ref) {
-        return (
-            <div>
-                <label className="block text-sm font-medium text-indigo-300/80 mb-2">
-                    {label}
-                </label>
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-11 w-full rounded-lg border bg-background px-4 py-2 text-base ring-offset-background",
+          "file:border-0 file:bg-transparent file:text-sm file:font-medium",
+          "placeholder:text-muted-foreground/50",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "transition-colors duration-200",
+          "glass input-gradient",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
 
-                <input
-                    name='input'
-                    type={type}
-                    className={className}
-                    ref={ref}
-                    {...props}
-                />
-            </div>
-        );
-    },
-);
+export { Input }

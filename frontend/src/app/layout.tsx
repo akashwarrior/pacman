@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { ToastContainer } from "react-toastify";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -10,20 +11,28 @@ const geistSans = localFont({
 
 export const metadata: Metadata = {
   title: "Battle Arena",
-  description: "A Pacman shooter game",
+  description: "Pacman shooter game with a twist",
+  icons: {
+    icon: "/pacman.png",
+  },
+  keywords: ["pacman", "shooter", "game", "battle", "arena"],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <meta name="theme-color" content="#0A0F1C" />
       <body
         className={`${geistSans.variable} antialiased`}>
         {children}
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          closeOnClick
+          theme="dark"
+          stacked
+          className='max-w-[90%] mx-auto!'
+        />
       </body>
     </html>
   );

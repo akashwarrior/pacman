@@ -1,8 +1,8 @@
 package main
 
 import (
+	pb "battle-arena/message"
 	"encoding/json"
-	pb "gather-town/message"
 	"net/http"
 
 	"github.com/gobwas/ws"
@@ -17,25 +17,18 @@ func main() {
 
 	handler := enableCORS(mux)
 
-	// Start the HTTP server
 	http.ListenAndServe(":8080", handler)
 }
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// "https://battle-arena-git-main-akashwarriors-projects.vercel.app",
-		w.Header().Set("Access-Control-Allow-Origin", "https://battle-arena-chi.vercel.app")
-		// Allow certain HTTP methods (GET, POST, PUT, DELETE, etc.)
+		w.Header().Set("Access-Control-Allow-Origin", "battle-arena.akashgupta.tech")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		// Allow certain headers (adjust as necessary)
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		// If the method is OPTIONS, return 200 to handle pre-flight requests
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		// Proceed to the next handler
 		next.ServeHTTP(w, r)
 	})
 }

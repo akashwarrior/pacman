@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { renderGame } from '../utils/renderer';
+import { renderGame } from '@/lib/renderer';
 import { GameState } from '@/types';
 
 export function useGameLoop(gameState: GameState) {
@@ -13,12 +13,17 @@ export function useGameLoop(gameState: GameState) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    frameIdRef.current = requestAnimationFrame(() => renderGame(ctx, gameState));
+    const render = () => {
+      if (ctx) {
+        renderGame(ctx, gameState);
+      }
+      frameIdRef.current = requestAnimationFrame(render);
+    };
+
+    frameIdRef.current = requestAnimationFrame(render);
 
     return () => {
-      if (frameIdRef.current) {
-        cancelAnimationFrame(frameIdRef.current);
-      }
+      cancelAnimationFrame(frameIdRef.current);
     };
   }, [gameState]);
 

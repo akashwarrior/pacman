@@ -1,6 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
 
 html,
 body {
@@ -8,9 +17,628 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 #root {
   width: 100%;
   height: 100%;
+}
+
+:root {
+  --background: 230 25% 5%;
+  --foreground: 210 40% 98%;
+  
+  --muted: 230 25% 10%;
+  --muted-foreground: 210 40% 60%;
+  
+  --accent: 230 50% 15%;
+  --accent-foreground: 210 40% 98%;
+  
+  --popover: 230 25% 8%;
+  --popover-foreground: 210 40% 98%;
+  
+  --border: 230 25% 15%;
+  --input: 230 25% 15%;
+  
+  --card: 230 25% 8%;
+  --card-foreground: 210 40% 98%;
+  
+  --primary: 230 100% 65%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 230 25% 15%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --destructive: 0 100% 65%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --ring: 230 100% 65%;
+  
+  --radius: 1rem;
+
+  /* Game theme colors */
+  --neon-blue: 230 100% 65%;
+  --neon-purple: 280 100% 65%;
+  --neon-pink: 330 100% 65%;
+  --neon-yellow: 50 100% 65%;
+  
+  /* Gradient stops */
+  --gradient-1: hsl(var(--neon-blue));
+  --gradient-2: hsl(var(--neon-purple));
+  --gradient-3: hsl(var(--neon-pink));
+  --gradient-4: hsl(var(--neon-yellow));
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@keyframes reveal {
+  0% {
+    scale: 0.8;
+    opacity: 0;
+    translate: 0 4lh;
+    filter: blur(20px);
+  }
+}
+
+::view-transition-new(.page-enter):only-child {
+  animation-name: reveal;
+}
+
+::view-transition-old(.page-exit):only-child {
+  animation-name: reveal;
+  animation-direction: reverse;
+}
+
+/* util for faster than default (250ms) transitions. Typically used to make exits faster so they don't visually overlap with enters */
+::view-transition-group(.duration-100) {
+  animation-duration: 100ms;
+}
+
+/* 
+Blur animation for view transitions with tracked elements. Fast-moving solid elements can be visually jarring as the eye tries to track them. This creates a poor man's motion blur we can use to make these transitions smoother.
+*/
+@keyframes via-blur {
+  30% {
+    filter: blur(10px);
+  }
+}
+
+/* using ::view-transition-image-pair and not ::view-transition-group to preserve the default animation's automatic scale and position morphing */
+::view-transition-image-pair(.via-blur) {
+  animation-name: via-blur;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    /* alternatively, you could design more subtle variants */
+    animation: none !important;
+  }
+}
+
+/* Smooth page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hover effects */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px var(--gradient-1),
+                0 0 10px var(--gradient-2);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--gradient-3),
+                0 0 40px var(--gradient-4);
+  }
+  100% {
+    box-shadow: 0 0 5px var(--gradient-4),
+                0 0 10px var(--gradient-5);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Button hover effects */
+.button-hover {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.button-hover::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.button-hover:hover::before {
+  width: 300%;
+  height: 300%;
+}
+
+/* Card effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Input focus effects */
+.input-focus {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-focus:focus {
+  border-color: var(--gradient-3);
+  box-shadow: 0 0 0 2px rgba(var(--theme-purple), 0.2);
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--secondary) 25%, 
+    var(--muted) 50%, 
+    var(--secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1) blur(0);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2) blur(4px);
+  }
+}
+
+@keyframes neon-border {
+  0%, 100% {
+    border-color: hsl(var(--neon-blue));
+    box-shadow: 0 0 20px hsl(var(--neon-blue) / 0.5);
+  }
+  33% {
+    border-color: hsl(var(--neon-purple));
+    box-shadow: 0 0 20px hsl(var(--neon-purple) / 0.5);
+  }
+  66% {
+    border-color: hsl(var(--neon-pink));
+    box-shadow: 0 0 20px hsl(var(--neon-pink) / 0.5);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-neon {
+  animation: neon-border 6s linear infinite;
+}
+
+/* Glass effect */
+.glass {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.2),
+    hsl(var(--background) / 0.1)
+  );
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  box-shadow: 0 8px 32px hsl(var(--background) / 0.2);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(
+    to right,
+    var(--gradient-1),
+    var(--gradient-3)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 4s ease infinite;
+  background-size: 200% auto;
+}
+
+/* Button styles */
+.button-gradient {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    var(--gradient-1),
+    var(--gradient-3)
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+  border: none;
+  overflow: hidden;
+}
+
+.button-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: calc(var(--radius) - 1px);
+  transition: background-color 0.2s ease;
+}
+
+.button-gradient:hover::before {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.button-gradient > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Card styles */
+.card-gradient {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Input styles */
+.input-gradient {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.input-gradient:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2),
+              0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Game UI Components */
+.game-card {
+  @apply rounded-xl p-6 transition-all duration-300;
+  border: 1px solid hsl(var(--border));
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary));
+}
+
+.game-button {
+  @apply relative overflow-hidden rounded-lg px-6 py-3 font-medium transition-all duration-300;
+  background: linear-gradient(
+    45deg,
+    hsl(var(--neon-blue)),
+    hsl(var(--neon-purple))
+  );
+}
+
+.game-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+}
+
+.game-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--foreground) / 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.game-button:hover:before {
+  left: 100%;
+}
+
+.game-input {
+  @apply rounded-lg px-4 py-3 transition-all duration-300;
+  border: 1px solid hsl(var(--border));
+}
+
+.game-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+/* Game text effects */
+.game-title {
+  @apply font-bold;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--neon-blue)),
+    hsl(var(--neon-purple)),
+    hsl(var(--neon-pink))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+}
+
+/* Game background effects */
+.game-bg {
+  background: 
+    radial-gradient(circle at 0% 0%, hsl(var(--neon-blue) / 0.15), transparent 50%),
+    radial-gradient(circle at 100% 0%, hsl(var(--neon-purple) / 0.15), transparent 50%),
+    radial-gradient(circle at 100% 100%, hsl(var(--neon-pink) / 0.15), transparent 50%),
+    radial-gradient(circle at 0% 100%, hsl(var(--neon-yellow) / 0.15), transparent 50%);
+}
+
+/* Game grid */
+.game-grid {
+  background-image: 
+    linear-gradient(hsl(var(--border) / 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Utility classes */
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+.text-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.neon-border {
+  border: 1px solid hsl(var(--primary));
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+}
+
+/* Game Over Page Animations */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.1);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Additional Game UI Components */
+.game-over-score {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--neon-blue)),
+    hsl(var(--neon-purple))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
 }

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	pb "gather-town/message"
+	pb "battle-arena/message"
 
 	"github.com/gobwas/ws/wsutil"
 	"google.golang.org/protobuf/proto"

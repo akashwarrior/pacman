@@ -8,7 +8,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"google.golang.org/protobuf/proto"
 
-	pb "gather-town/message"
+	pb "battle-arena/message"
 )
 
 func parseParams(r *http.Request) (int32, uint16, error) {

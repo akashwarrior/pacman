@@ -1,4 +1,4 @@
-module gather-town
+module battle-arena
 
 go 1.23.2
 

@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	pb "gather-town/message"
+	pb "battle-arena/message"
 )
 
 const (
-	PLAYER_SPEED      = 5
-	BULLET_SPEED      = 10
+	PLAYER_SPEED      = 4
+	BULLET_SPEED      = 7
 	GRASS_MIN_RADIUS  = 30
 	GRASS_MAX_RADIUS  = 50
 	NUM_GRASS_PATCHES = 20

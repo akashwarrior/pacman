@@ -6,7 +6,7 @@ class SocketManager {
   private static instance: SocketManager;
   private eventListeners: { [event: string]: (data: Payload, ID?: number) => void } = {};
   private missedEvents: { [event: string]: Message } = {};
-  // private timeTook: number = 0;
+  private timeTook: number = 0;
 
   private constructor() { }
 
@@ -24,7 +24,7 @@ class SocketManager {
     }
 
     this.socket = new WebSocket(
-      `wss://${process.env.NEXT_PUBLIC_BACKEND_URL}/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
+      `ws://${process.env.NEXT_PUBLIC_BACKEND_URL}/play?playerId=${roomManager.PlayerId}&roomId=${roomId}`
     );
 
     this.socket.binaryType = "arraybuffer";
@@ -32,14 +32,14 @@ class SocketManager {
     this.socket.onmessage = (event) => {
       let data: Message;
       try {
-        // const now = new Date().getTime();
+        const now = new Date().getTime();
         data = Message.decode(new Uint8Array(event.data));
-        // if (data.time) {
-        //   const timeTook = now - (data.time as number);
-        //   this.timeTook = Math.max(this.timeTook, timeTook);
-        //   console.log("Time took:", timeTook);
-        // }
-        // console.log("Max time took:", this.timeTook);
+        if (data.time) {
+          const timeTook = now - (data.time as number);
+          this.timeTook = Math.max(this.timeTook, timeTook);
+          console.log("Time took:", timeTook);
+        }
+        console.log("Max time took:", this.timeTook);
       } catch (error) {
         console.log("Failed to parse message:", error);
         return;

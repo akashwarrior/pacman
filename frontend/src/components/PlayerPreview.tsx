@@ -1,151 +1,96 @@
-import { useCallback, useEffect, useRef } from "react";
-import { ColorPicker } from "./ColorPicker";
-import { Input } from "./ui/Input";
+import { LazyMotion, domAnimation } from "motion/react";
+import * as motion from "motion/react-m";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/card";
+import { ColorPicker } from "@/components/ColorPicker";
+import { Users, GamepadIcon } from "lucide-react";
 
-export function PlayerPreview({ nameRef, colorRef }: { nameRef: React.RefObject<HTMLInputElement | null>, colorRef: React.RefObject<string> }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
-  const fireIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const bulletsRef = useRef<{ x: number; y: number }[]>([]);
+interface PlayerPreviewProps {
+  nameRef: React.RefObject<HTMLInputElement | null>;
+  colorRef: React.RefObject<string>;
+}
 
-  const renderPlayer = useCallback((ctx: CanvasRenderingContext2D) => {
-    const color = colorRef.current;
-    const name = nameRef.current?.value || "Player";
-
-    ctx.clearRect(0, 0, ctx.canvas.width, 80);
-
-    // Draw player body
-    ctx.beginPath()
-    ctx.arc(ctx.canvas.width / 2, ctx.canvas.height / 2 + 10, 20, 0, Math.PI * 2)
-    ctx.fillStyle = color;
-    ctx.fill()
-
-    // Draw line for mouth
-    ctx.beginPath()
-    ctx.moveTo(ctx.canvas.width / 2, ctx.canvas.height / 2 + 10)
-    ctx.lineTo(ctx.canvas.width / 2 + 20, ctx.canvas.height / 2 + 10)
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
-    ctx.lineWidth = 2.5
-    ctx.stroke()
-
-    // remove bullets that are out of the canvas
-    bulletsRef.current = bulletsRef.current.filter((b) => b.x < ctx.canvas.width);
-
-    // Draw bullets
-    bulletsRef.current.forEach((b) => {
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      b.x += 2;
-    });
-
-    // Draw player name
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px Inter, system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
-    ctx.fillText(name, ctx.canvas.width / 2, ctx.canvas.height / 2 + 10 - 30);
-    ctx.shadowBlur = 0;
-
-    if (bulletsRef.current.length) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
+const fadeInUp = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut"
     }
-  }, [colorRef, nameRef]);
+  }
+};
 
-  const handleMouseEnter = () => {
-    if (fireIntervalRef.current) return;
-
-    const canvas = canvasRef.current;
-    let ctx = null;
-    if (canvas) {
-      ctx = canvas.getContext("2d");
-    }
-    fireIntervalRef.current = setInterval(() => {
-      if (!ctx) return;
-      bulletsRef.current.push({ x: ctx.canvas.width / 2 + 30, y: ctx.canvas.height / 2 + 10 });
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
-    }, 120);
-  };
-
-  const handleMouseLeave = () => {
-    if (fireIntervalRef.current) {
-      clearInterval(fireIntervalRef.current);
-      fireIntervalRef.current = null;
+export function PlayerPreview({ nameRef, colorRef }: PlayerPreviewProps) {
+  const handleColorChange = (color: string) => {
+    if (colorRef.current) {
+      colorRef.current = color;
     }
   };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
-
-    return () => {
-      handleMouseLeave();
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (fireIntervalRef.current) {
-        clearInterval(fireIntervalRef.current);
-      }
-      canvasRef.current?.remove();
-      canvasRef.current = null;
-      bulletsRef.current = [];
-      animationRef.current = 0;
-      fireIntervalRef.current = null;
-    };
-  }, [renderPlayer]);
 
   return (
-    <div className="space-y-4">
-      <div className="relative group"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-200" />
-        <canvas
-          ref={canvasRef}
-          height={80}
-          className="w-full rounded-3xl bg-white/[0.02] backdrop-blur-xl border border-white/10 shadow-2xl"
-        />
+    <LazyMotion features={domAnimation}>
+      <div className="space-y-10 max-w-xl mx-auto">
+        <motion.div
+          variants={fadeInUp}
+          className="space-y-4"
+        >
+          <label htmlFor="playerName" className="flex items-center gap-2 text-base">
+            Your Name
+            <div className="size-2 rounded-full bg-[var(--neon-blue)] animate-pulse-glow" />
+          </label>
+          <Input
+            id="playerName"
+            ref={nameRef as React.RefObject<HTMLInputElement>}
+            type="text"
+            autoComplete="off"
+            placeholder="Enter your name to begin"
+            className="h-14 text-base font-medium tracking-wide bg-transparent!"
+            maxLength={20}
+            autoFocus
+          />
+        </motion.div>
+
+        <motion.div
+          variants={fadeInUp}
+          className="space-y-8"
+        >
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 text-lg">
+              Choose Your Color
+              <div className="size-2 rounded-full bg-[var(--neon-purple)] animate-pulse-glow" />
+            </label>
+            <ColorPicker onChange={handleColorChange} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <Card className="glass flex items-center gap-3 p-4 hover:neon-border transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="size-3 rounded-full bg-[var(--gradient-2)] animate-pulse-slow animate-ping" />
+                <span className="text-sm text-muted-foreground font-medium">Online</span>
+              </div>
+              <span className="text-lg font-bold flex items-center gap-2">
+                <Users size={18} />
+                <span className="text-[var(--neon-blue)]">{1}</span>
+                <span className="text-base font-medium">Players</span>
+              </span>
+            </Card>
+
+            <Card className="glass flex items-center gap-3 p-4 hover:neon-border transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="size-3 rounded-full bg-[var(--gradient-4)] animate-pulse-slow animate-ping" />
+                <span className="text-sm text-muted-foreground font-medium">Active</span>
+              </div>
+              <span className="text-lg font-bold flex items-center gap-2">
+                <GamepadIcon size={18} />
+                <span className="text-[var(--neon-purple)]">0</span>
+                <span className="text-base font-medium">Games</span>
+              </span>
+            </Card>
+          </div>
+        </motion.div>
       </div>
-      <Input
-        label="Your Name"
-        ref={nameRef}
-        onChange={() => {
-          if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current);
-          }
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
-        }}
-        className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all duration-200 placeholder-white/20"
-        placeholder="Enter your name"
-      />
-      <ColorPicker
-        onChange={(color) => {
-          colorRef.current = color;
-          if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current);
-          }
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          animationRef.current = requestAnimationFrame(() => renderPlayer(ctx));
-        }}
-      />
-    </div>
+    </LazyMotion>
   );
 }

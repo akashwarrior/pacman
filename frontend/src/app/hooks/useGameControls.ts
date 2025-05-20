@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { BULLET_FIRE_INTERVAL, MOVEMENT_UPDATE_INTERVAL, PLAYER_SPEED } from '@/app/constants/gameConfig';
+import { BULLET_FIRE_INTERVAL, MOVEMENT_UPDATE_INTERVAL, PLAYER_SPEED } from '@/lib/constants/gameConfig';
 import { roomManager } from '@/services/roomManager';
 
 const pressedKeys = new Set<string>();

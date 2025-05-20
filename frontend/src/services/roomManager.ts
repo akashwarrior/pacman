@@ -18,7 +18,7 @@ class RoomManager {
 
   public async createRoom(player: { Name: string; Color: string }, retryCount: number): Promise<number | null> {
     try {
-      const res = await axios.post(`https://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/create`, player);
+      const res = await axios.post(`http://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/create`, player);
       const { playerId, roomId } = res.data;
       this.PlayerId = playerId;
       socketManager.connect(roomId);
@@ -34,7 +34,7 @@ class RoomManager {
 
   public async joinRoom(player: { Name: string; Color: string }, roomId: number, retryCount: number): Promise<number | null> {
     try {
-      const res = await axios.post(`https://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/join?roomId=${roomId}`, player);
+      const res = await axios.post(`http://${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/join?roomId=${roomId}`, player);
       const { playerId } = res.data;
       this.PlayerId = playerId;
       socketManager.connect(roomId);

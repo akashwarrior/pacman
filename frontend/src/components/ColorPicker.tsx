@@ -1,54 +1,98 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-const COLORS: { value: string; hex: string; label: string }[] = [
+const COLORS = [
   {
-    value: "from-red-400 to-red-600 bg-red-500 hover:bg-red:600 shadow-red-900",
-    hex: "#ef4444",
-    label: "Red",
+    value: "from-blue-500 to-blue-600",
+    hex: "#3b82f6",
+    label: "Blue",
+    gradient: "var(--gradient-1)",
   },
   {
-    value: "from-yellow-400 to-yellow-600 bg-yellow-500 hover:bg-yellow:600 shadow-yellow-900",
+    value: "from-purple-500 to-purple-600",
+    hex: "#a855f7",
+    label: "Purple",
+    gradient: "var(--gradient-2)",
+  },
+  {
+    value: "from-pink-500 to-pink-600",
+    hex: "#ec4899",
+    label: "Pink",
+    gradient: "var(--gradient-3)",
+  },
+  {
+    value: "from-yellow-500 to-yellow-600",
     hex: "#eab308",
     label: "Yellow",
+    gradient: "var(--gradient-4)",
   },
   {
-    value: "from-green-400 to-green-600 bg-green-500 hover:bg-green:600 shadow-green-900",
-    hex: "#22c55e",
-    label: "Green",
+    value: "from-emerald-500 to-emerald-600",
+    hex: "#10b981",
+    label: "Emerald",
+    gradient: "linear-gradient(135deg, #10b981, #059669)",
   },
 ];
 
-export function ColorPicker({ onChange }: { onChange: (color: string) => void; }) {
-  const [value, setValue] = useState("");
+const container = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 20
+    }
+  }
+};
+
+export function ColorPicker({ onChange }: { onChange: (color: string) => void }) {
+  const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
 
   const handleColorChange = (color: string) => {
-    setValue(color);
+    setSelectedColor(color);
     onChange(color);
   };
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-indigo-300/80 mb-2">
-        Choose Your Color
-      </label>
-      <div className="grid grid-cols-3 gap-2">
+    <div className="space-y-3">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-5 gap-3"
+      >
         {COLORS.map((color) => (
-          <button
-            key={color.value}
+          <motion.button
+            key={color.hex}
+            variants={item}
             onClick={() => handleColorChange(color.hex)}
-            className={`w-full px-3 py-3 rounded text-white text-sm font-medium group relative overflow-hidden bg-green-500
-          ${value === color.hex && "ring-2 ring-white/80 scale-[1.02]"} transition-all duration-100 shadow-lg hover:opacity-80 ${color.value}`}
+            className={cn(
+              "relative group h-14 rounded-xl overflow-hidden transition-transform duration-200 hover:scale-105",
+              selectedColor === color.hex && "ring-2 ring-white/50 scale-[1.02] z-10"
+            )}
           >
             <div
-              className={`absolute inset-0 bg-gradient-to-br from-${color.value} to-${color.value} opacity-80 group-hover:opacity-100 transition-opacity`}
+              className="absolute inset-0 opacity-90 group-hover:opacity-100 transition-opacity"
+              style={{ background: color.gradient }}
             />
-            <div
-              className={`absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] group-hover:translate-x-[100%] transition-transform duration-500`}
-            />
-            <span className="relative">{color.label}</span>
-          </button>
+            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] group-hover:translate-x-[100%] transition-transform duration-500" />
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

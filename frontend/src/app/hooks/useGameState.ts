@@ -26,9 +26,9 @@ export function useGameState() {
     });
 
     // LEAVE event
-    roomManager.onEvent(SOCKET_EVENT.KICK, (data, id) => {
+    roomManager.onEvent(SOCKET_EVENT.KICK, ({ kills }, id) => {
       if (id === roomManager.PlayerId) {
-        router.replace(`/game-over?ID=${id}&Kills=${data?.kills ?? 0}`);
+        router.replace(`/game-over?ID=${id}&score=${(kills ?? 0) * 10}`);
         return;
       }
       setGameState((prev) => ({
