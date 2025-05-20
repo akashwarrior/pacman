@@ -68,6 +68,7 @@ export default function Home() {
       }
       router.push(`/room/${roomId}`);
     } catch (error) {
+      console.log(error);
       toast.error('An error occurred while creating the room');
     } finally {
       setIsLoading(false);
@@ -101,6 +102,7 @@ export default function Home() {
         router.push(`/room/${id}`);
       }
     } catch (error) {
+      console.log(error);
       toast.error('An error occurred while joining the room');
     } finally {
       setIsLoading(false);

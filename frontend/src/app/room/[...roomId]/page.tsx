@@ -44,6 +44,7 @@ function handleStart() {
     try {
         roomManager.startGame();
     } catch (error) {
+        console.log(error);
         toast.error('Failed to start the game');
     }
 };
@@ -53,6 +54,7 @@ function handleKick(ID: number) {
         if (!ID) return;
         roomManager.kickPlayer(ID);
     } catch (error) {
+        console.log(error);
         toast.error('Failed to kick player');
     }
 };
@@ -153,6 +155,7 @@ export default function Room() {
             const isReady = !currentPlayer.isReady;
             roomManager.setPlayerReady({ isReady });
         } catch (error) {
+            console.log(error);
             toast.error('Failed to update ready status');
         }
     };
@@ -175,7 +178,7 @@ export default function Room() {
                             {/* Header */}
                             <div className="text-center space-y-2">
                                 <h1 className="game-title text-3xl sm:text-4xl">
-                                    {players[0]?.name}'s Arena
+                                    {players[0]?.name}&apos;s Arena
                                 </h1>
                                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                     <Shield className="w-4 h-4" />
