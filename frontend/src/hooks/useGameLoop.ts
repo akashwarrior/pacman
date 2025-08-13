@@ -5,6 +5,11 @@ import { GameState } from '@/types';
 export function useGameLoop(gameState: GameState) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIdRef = useRef<number>(0);
+  const latestGameStateRef = useRef<GameState>(gameState);
+
+  useEffect(() => {
+    latestGameStateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,7 +20,7 @@ export function useGameLoop(gameState: GameState) {
 
     const render = () => {
       if (ctx) {
-        renderGame(ctx, gameState);
+        renderGame(ctx, latestGameStateRef.current);
       }
       frameIdRef.current = requestAnimationFrame(render);
     };
@@ -25,7 +30,7 @@ export function useGameLoop(gameState: GameState) {
     return () => {
       cancelAnimationFrame(frameIdRef.current);
     };
-  }, [gameState]);
+  }, []);
 
   return canvasRef;
 }

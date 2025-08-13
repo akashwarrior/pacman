@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { VIEWPORT_WIDTH, VIEWPORT_HEIGHT } from '../../lib/constants/gameConfig';
+import { VIEWPORT_WIDTH, VIEWPORT_HEIGHT } from '@/lib/constants/gameConfig';
 
 export function useResponsiveCanvas() {
-  const [viewport, setViewport] = useState<{ scale: number; width: number; height: number }>({
+  const [viewport, setViewport] = useState<{ scale: number; width: number; height: number; isPortrait: boolean }>({
     scale: 1,
     width: VIEWPORT_WIDTH,
-    height: VIEWPORT_HEIGHT
+    height: VIEWPORT_HEIGHT,
+    isPortrait: false,
   });
 
   useEffect(() => {
@@ -28,14 +29,16 @@ export function useResponsiveCanvas() {
         setViewport({
           scale: mobileScale,
           width: screenWidth,
-          height: screenWidth * (VIEWPORT_HEIGHT / VIEWPORT_WIDTH)
+          height: screenWidth * (VIEWPORT_HEIGHT / VIEWPORT_WIDTH),
+          isPortrait,
         });
       } else {
         // For landscape and desktop, use normal scaling
         setViewport({
           scale,
           width: VIEWPORT_WIDTH * scale,
-          height: VIEWPORT_HEIGHT * scale
+          height: VIEWPORT_HEIGHT * scale,
+          isPortrait,
         });
       }
     }

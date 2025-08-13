@@ -1,5 +1,5 @@
 import axios from "axios";
-import { socketManager } from "@/services/sockerManager";
+import { socketManager } from "@/services/socketManager";
 import { SOCKET_EVENT } from "@/types";
 import { Payload, Position } from "@/types/message";
 
@@ -23,10 +23,9 @@ class RoomManager {
       this.PlayerId = playerId;
       socketManager.connect(roomId);
       return roomId;
-      // @ts-expect-error type error  
-    } catch (err: AxiosError) {
-      if (err.status === 400 && retryCount <= 3) {
-        this.createRoom(player, retryCount + 1);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 400 && retryCount <= 3) {
+        return this.createRoom(player, retryCount + 1);
       }
       return null;
     }
@@ -39,10 +38,9 @@ class RoomManager {
       this.PlayerId = playerId;
       socketManager.connect(roomId);
       return roomId;
-      // @ts-expect-error type error
-    } catch (err: AxiosError) {
-      if (err.status === 400 && retryCount < 2) {
-        this.joinRoom(player, roomId, retryCount + 1);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 400 && retryCount < 2) {
+        return this.joinRoom(player, roomId, retryCount + 1);
       }
       return null;
     }

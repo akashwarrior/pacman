@@ -1,10 +1,10 @@
 'use client'
 
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "@/lib/constants/gameConfig";
-import { useGameControls } from "@/app/hooks/useGameControls";
-import { useGameLoop } from "@/app/hooks/useGameLoop";
-import { useGameState } from "@/app/hooks/useGameState";
-import { useResponsiveCanvas } from "@/app/hooks/useResponsiveCanvas";
+import { useGameControls } from "@/hooks/useGameControls";
+import { useGameLoop } from "@/hooks/useGameLoop";
+import { useGameState } from "@/hooks/useGameState";
+import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { Button } from "@/components/ui/button";
 import { roomManager } from "@/services/roomManager";
 import { Volume2, VolumeX, Skull, Heart, Shield } from "lucide-react"

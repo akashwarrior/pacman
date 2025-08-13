@@ -6,15 +6,15 @@ const pressedKeys = new Set<string>();
 
 export function useGameControls() {
   const intervalRef = useRef<number>(0);
-  const fireIntervalRed = useRef<number>(0);
+  const fireIntervalRef = useRef<number>(0);
 
   const updateMovement = useCallback(() => {
     const movement = { x: 0, y: 0 };
 
-    if (pressedKeys.has('arrowup')) movement.y -= PLAYER_SPEED;
-    if (pressedKeys.has('arrowdown')) movement.y += PLAYER_SPEED;
-    if (pressedKeys.has('arrowleft')) movement.x -= PLAYER_SPEED;
-    if (pressedKeys.has('arrowright')) movement.x += PLAYER_SPEED;
+    if (pressedKeys.has('arrowup') || pressedKeys.has('w')) movement.y -= PLAYER_SPEED;
+    if (pressedKeys.has('arrowdown') || pressedKeys.has('s')) movement.y += PLAYER_SPEED;
+    if (pressedKeys.has('arrowleft') || pressedKeys.has('a')) movement.x -= PLAYER_SPEED;
+    if (pressedKeys.has('arrowright') || pressedKeys.has('d')) movement.x += PLAYER_SPEED;
 
     if (movement.x === 0 && movement.y === 0) {
       return;
@@ -34,8 +34,9 @@ export function useGameControls() {
       if (!pressedKeys.has(key)) {
         pressedKeys.add(key);
         if (key === ' ') {
+          e.preventDefault();
           fire()
-          fireIntervalRed.current = window.setInterval(fire, BULLET_FIRE_INTERVAL);
+          fireIntervalRef.current = window.setInterval(fire, BULLET_FIRE_INTERVAL);
         }
         if (!intervalRef.current) {
           updateMovement();
@@ -48,7 +49,7 @@ export function useGameControls() {
       const key = e.key.toLowerCase();
       pressedKeys.delete(key);
 
-      if (!['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].some(k => pressedKeys.has(k))) {
+      if (!['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].some(k => pressedKeys.has(k))) {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = 0;
@@ -56,9 +57,9 @@ export function useGameControls() {
       }
 
       if (!pressedKeys.has(' ')) {
-        if (fireIntervalRed.current) {
-          clearInterval(fireIntervalRed.current);
-          fireIntervalRed.current = 0;
+        if (fireIntervalRef.current) {
+          clearInterval(fireIntervalRef.current);
+          fireIntervalRef.current = 0;
         }
       }
     };

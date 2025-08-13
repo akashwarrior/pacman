@@ -35,11 +35,10 @@ class SocketManager {
         const now = new Date().getTime();
         data = Message.decode(new Uint8Array(event.data));
         if (data.time) {
-          const timeTook = now - (data.time as number);
+          const timeTook = now - data.time;
           this.timeTook = Math.max(this.timeTook, timeTook);
-          console.log("Time took:", timeTook);
+          console.log("Time took:", timeTook, "ms");
         }
-        console.log("Max time took:", this.timeTook);
       } catch (error) {
         console.log("Failed to parse message:", error);
         return;
