@@ -1,178 +1,164 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
-	"math/rand"
-	"net"
-	"sync"
-	"time"
+	"os"
 
-	pb "battle-arena/message"
+	pb "pacman-server/message"
 )
 
 const (
-	PLAYER_SPEED      = 4
-	BULLET_SPEED      = 7
-	GRASS_MIN_RADIUS  = 30
-	GRASS_MAX_RADIUS  = 50
-	NUM_GRASS_PATCHES = 20
-	MAP_WIDTH         = 2000
-	MAP_HEIGHT        = 1500
-	PLAYER_SIZE       = 20
-	BULLET_SIZE       = 4
+	PlayerSpeed  = 4.5
+	BulletSpeed  = 8.0
+	PlayerSize   = 22.0
+	BulletSize   = 5.0
+	TreeSize     = 35.0
+	CrateSize    = 40.0
+	MaxHealth    = 100
+	BulletDamage = 10
+	MaxPlayers   = 6
+	TickRate     = 16
 )
 
-type Player struct {
-	pb.Player
-	Conn *net.Conn
-	mu   sync.RWMutex
+type GameMap struct {
+	Width  int     `json:"width"`
+	Height int     `json:"height"`
+	Theme  string  `json:"theme"`
+	Walls  []Wall  `json:"walls"`
+	Water  []Water `json:"water"`
+	Bushes []Bush  `json:"bushes"`
+	Trees  []Tree  `json:"trees"`
+	Rocks  []Rock  `json:"rocks"`
+	Crates []Crate `json:"crates"`
 }
 
-var gameMap = generateMap()
+type Wall struct{ X, Y, Width, Height, Variant int }
+type Water struct{ X, Y, Width, Height int }
+type Bush struct{ X, Y, Radius int }
+type Tree struct{ X, Y, Size int }
+type Rock struct{ X, Y, Size, Variant int }
+type Crate struct{ ID, X, Y, Health int }
 
-func generateMap() *pb.GameMap {
-	var Map pb.GameMap
-	Map.Obstacles = []*pb.Obstacle{
-		{X: MAP_WIDTH/2 - 100, Y: MAP_HEIGHT/2 - 100, Width: 200, Height: 200},
+var gameMap GameMap
 
-		// Corner obstacles
-		{X: 50, Y: 50, Width: 100, Height: 100},
-		{X: MAP_WIDTH - 150, Y: 50, Width: 100, Height: 100},
-		{X: 50, Y: MAP_HEIGHT - 150, Width: 100, Height: 100},
-		{X: MAP_WIDTH - 150, Y: MAP_HEIGHT - 150, Width: 100, Height: 100},
+func loadMap(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
 	}
-
-	for i := 0; i < NUM_GRASS_PATCHES; i++ {
-		Map.GrassPatches = append(Map.GrassPatches, &pb.GrassPatch{
-			X:      uint32(rand.Float64() * float64(MAP_WIDTH)),
-			Y:      uint32(rand.Float64() * float64(MAP_HEIGHT)),
-			Radius: uint32(GRASS_MIN_RADIUS + rand.Float64()*(GRASS_MAX_RADIUS-GRASS_MIN_RADIUS)),
-		})
-	}
-
-	return &Map
+	return json.Unmarshal(data, &gameMap)
 }
 
-func calculateNewPosition(currentPosition *pb.Position, angle *float64, speed float64, newPosition *pb.Position) {
-	newPosition.X = currentPosition.X + math.Cos(*angle)*speed
-	newPosition.Y = currentPosition.Y + math.Sin(*angle)*speed
-}
-
-func normalizeMovement(movement *pb.Position) float64 {
-	var magnitude = math.Sqrt(movement.X*movement.X + movement.Y*movement.Y)
-	if magnitude == 0 {
-		return math.Atan2(movement.Y, movement.X)
-	}
-	return math.Atan2(movement.Y/magnitude, movement.X/magnitude)
-}
-
-func checkInGrass(position *pb.Position, inGrass *bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for _, grass := range gameMap.GrassPatches {
-		if math.Hypot(position.X-float64(grass.X), position.Y-float64(grass.Y)) < float64(grass.Radius) {
-			*inGrass = true
-			return
-		}
-	}
-	*inGrass = false
-}
-
-func checkCollision(size float64, position *pb.Position, isCollided *bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	if position.X-size < 0 ||
-		position.X+size > float64(MAP_WIDTH) ||
-		position.Y-size < 0 ||
-		position.Y+size > float64(MAP_HEIGHT) {
-		*isCollided = true
-		return
-	}
-
-	for _, obstacle := range gameMap.Obstacles {
-		if position.X+size > float64(obstacle.X) &&
-			position.X-size < float64((obstacle.X)+uint32(obstacle.Width)) &&
-			position.Y+size > float64(obstacle.Y) &&
-			position.Y-size < float64((obstacle.Y)+uint32(obstacle.Height)) {
-			*isCollided = true
-			return
-		}
-	}
-	*isCollided = false
-}
-
-func (room *Room) handleBulletMovement(bullet *pb.Bullet, playerID *int32) {
-	var wg sync.WaitGroup
-	var isCollided bool
-	var newPosition pb.Position
-	for {
-		calculateNewPosition(bullet.Position, &bullet.Rotation, BULLET_SPEED, &newPosition)
-		wg.Add(2)
-		go checkCollision(BULLET_SIZE, &newPosition, &isCollided, &wg)
-		go checkBulletHit(room, bullet, playerID, &wg)
-		wg.Wait()
-		if isCollided || bullet.Expired {
-			bullet.Expired = true
-		} else {
-			bullet.Position = &newPosition
-		}
-		if room == nil {
-			return
-		}
-		var roomSize uint8
-		room.mu.RLock()
-		for _, player := range room.player {
-			if player != nil {
-				roomSize++
-			}
-		}
-		room.mu.RUnlock()
-		if roomSize <= 1 {
-			return
-		}
-		var ID int32 = 255
-		go room.broadcastParallel(&pb.Message{
-			Id:      &ID,
-			Event:   SHOOT,
-			Payload: &pb.Payload{Bullet: bullet},
-		})
-		if bullet.Expired {
-			return
-		}
-		time.Sleep(16 * time.Millisecond)
+func getSpawnPosition(index int) *pb.Position {
+	return &pb.Position{
+		X: float64(gameMap.Width/(index+1)) - 200,
+		Y: float64(gameMap.Height/(index+1)) - 200,
 	}
 }
 
-func checkBulletHit(room *Room, bullet *pb.Bullet, playerID *int32, wg *sync.WaitGroup) {
-	room.mu.RLock()
-	defer room.mu.RUnlock()
-	defer wg.Done()
+func calculatePosition(pos *pb.Position, angle, speed float64) *pb.Position {
+	return &pb.Position{
+		X: pos.X + math.Cos(angle)*speed,
+		Y: pos.Y + math.Sin(angle)*speed,
+	}
+}
 
-	for _, player := range room.player {
-		if player != nil && *playerID != player.Id {
-			player.mu.Lock()
-			if math.Hypot(player.Position.X-bullet.Position.X, player.Position.Y-bullet.Position.Y) < PLAYER_SIZE {
-				bullet.Expired = true
-				player.Health -= 10
-				if player.Health == 0 {
-					room.broadcast <- &pb.Message{
-						Id:    &player.Id,
-						Event: KICK,
-					}
-					room.broadcast <- &pb.Message{
-						Id:    playerID,
-						Event: KILLS,
-					}
-				} else {
-					go room.broadcastParallel(&pb.Message{
-						Id:      &player.Id,
-						Event:   HIT,
-						Payload: &pb.Payload{Health: &player.Health},
-					})
-				}
-				player.mu.Unlock()
-				return
-			}
-			player.mu.Unlock()
+func normalizeAngle(movement *pb.Position) float64 {
+	mag := math.Hypot(movement.X, movement.Y)
+	if mag == 0 {
+		mag = 1
+	}
+	return math.Atan2(movement.Y/mag, movement.X/mag)
+}
+
+func isInBush(pos *pb.Position) bool {
+	for _, b := range gameMap.Bushes {
+		if math.Hypot(pos.X-float64(b.X), pos.Y-float64(b.Y)) < float64(b.Radius) {
+			return true
 		}
 	}
+	return false
+}
+
+func checkCollision(size float64, pos *pb.Position) bool {
+	w, h := float64(gameMap.Width), float64(gameMap.Height)
+
+	if pos.X-size < 0 || pos.X+size > w || pos.Y-size < 0 || pos.Y+size > h {
+		return true
+	}
+
+	for _, wall := range gameMap.Walls {
+		if circleRect(pos.X, pos.Y, size, float64(wall.X), float64(wall.Y), float64(wall.Width), float64(wall.Height)) {
+			return true
+		}
+	}
+
+	for _, water := range gameMap.Water {
+		if circleRect(pos.X, pos.Y, size, float64(water.X), float64(water.Y), float64(water.Width), float64(water.Height)) {
+			return true
+		}
+	}
+
+	for _, t := range gameMap.Trees {
+		radius := TreeSize * (0.5 + float64(t.Size)*0.3) * 0.4
+		if math.Hypot(pos.X-float64(t.X), pos.Y-float64(t.Y)) < size+radius {
+			return true
+		}
+	}
+
+	for _, r := range gameMap.Rocks {
+		if math.Hypot(pos.X-float64(r.X), pos.Y-float64(r.Y)) < size+float64(r.Size) {
+			return true
+		}
+	}
+
+	half := CrateSize / 2.0
+	for _, c := range gameMap.Crates {
+		if c.Health > 0 && circleRect(pos.X, pos.Y, size, float64(c.X)-half, float64(c.Y)-half, CrateSize, CrateSize) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func checkBulletCollision(pos *pb.Position) bool {
+	w, h := float64(gameMap.Width), float64(gameMap.Height)
+
+	if pos.X-BulletSize < 0 || pos.X+BulletSize > w || pos.Y-BulletSize < 0 || pos.Y+BulletSize > h {
+		return true
+	}
+
+	for _, wall := range gameMap.Walls {
+		if pointInRect(pos.X, pos.Y, float64(wall.X), float64(wall.Y), float64(wall.Width), float64(wall.Height)) {
+			return true
+		}
+	}
+
+	for _, r := range gameMap.Rocks {
+		if math.Hypot(pos.X-float64(r.X), pos.Y-float64(r.Y)) < float64(r.Size) {
+			return true
+		}
+	}
+
+	half := CrateSize / 2.0
+	for _, c := range gameMap.Crates {
+		if c.Health > 0 && pointInRect(pos.X, pos.Y, float64(c.X)-half, float64(c.Y)-half, CrateSize, CrateSize) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func circleRect(cx, cy, cr, rx, ry, rw, rh float64) bool {
+	closestX := math.Max(rx, math.Min(cx, rx+rw))
+	closestY := math.Max(ry, math.Min(cy, ry+rh))
+	dx, dy := cx-closestX, cy-closestY
+	return dx*dx+dy*dy < cr*cr
+}
+
+func pointInRect(px, py, rx, ry, rw, rh float64) bool {
+	return px > rx && px < rx+rw && py > ry && py < ry+rh
 }

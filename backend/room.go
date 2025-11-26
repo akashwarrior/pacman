@@ -2,254 +2,556 @@ package main
 
 import (
 	"math"
+	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	pb "battle-arena/message"
+	pb "pacman-server/message"
 
 	"github.com/gobwas/ws/wsutil"
 	"google.golang.org/protobuf/proto"
 )
 
-// Event Constants
 const (
-	JOIN      = "Join"
-	READY     = "Ready"
-	LEAVE     = "Leave"
-	SPAWN     = "Spawn"
-	MOVE      = "Move"
-	SHOOT     = "Shoot"
-	HIT       = "Hit"
-	KICK      = "Kick"
-	START     = "Start"
-	DELETE    = "Delete"
-	KILLS     = "Kills"
-	GAME_OVER = "Game Over"
+	EventJoin   = "Join"
+	EventReady  = "Ready"
+	EventSpawn  = "Spawn"
+	EventMove   = "Move"
+	EventShoot  = "Shoot"
+	EventHit    = "Hit"
+	EventKick   = "Kick"
+	EventStart  = "Start"
+	EventDelete = "Delete"
+	EventKills  = "Kills"
 )
 
-type Room struct {
-	ID            uint16
-	IsGameStarted bool
-	player        [6]*Player
-	broadcast     chan *pb.Message
-	Time          uint8
-	mu            sync.RWMutex
+type JoinRequest struct {
+	Name     string
+	Color    string
+	Response chan JoinResponse
 }
 
-// GLOBAL ROOM to store all the rooms
-var rooms sync.Map
-var ROOM_ID uint16 = 1
+type JoinResponse struct {
+	PlayerID int
+	OK       bool
+	Error    string
+}
 
-func (room *Room) run() {
-	defer func() {
-		rooms.Delete(room.ID)
-	}()
-	for msg := range room.broadcast {
-		switch msg.Event {
-		case DELETE:
-			return
-		case START:
-			go room.startGame(msg)
-		case MOVE:
-			go room.broadcastMove(msg)
-		case KICK:
-			go room.kickPlayer(msg)
-		case READY:
-			go func(msg *pb.Message, room *Room) {
-				room.broadcastParallel(msg)
-				room.mu.RLock()
-				defer room.mu.RUnlock()
-				room.player[*msg.Id].mu.Lock()
-				room.player[*msg.Id].IsReady = *msg.Payload.IsReady
-				room.player[*msg.Id].mu.Unlock()
-			}(msg, room)
-		case SHOOT:
-			if *msg.Id == 255 {
-				go room.broadcastParallel(msg)
-			} else {
-				go func(msg *pb.Message, room *Room) {
-					var bullet = pb.Bullet{
-						Id:       float64(time.Now().UnixNano()),
-						Position: room.player[*msg.Id].Position,
-						Rotation: room.player[*msg.Id].Rotation,
-					}
-					msg.Payload.Bullet = &bullet
-					go room.broadcastParallel(msg)
-					go room.handleBulletMovement(&bullet, msg.Id)
-				}(msg, room)
+type ConnectRequest struct {
+	PlayerID int32
+	Conn     *net.Conn
+	Response chan ConnectResponse
+}
+
+type ConnectResponse struct {
+	OK      bool
+	Players []*pb.Player
+}
+
+type RoomManager struct {
+	rooms   sync.Map
+	counter uint32
+}
+
+var globalRooms = &RoomManager{}
+
+func (rm *RoomManager) Add(room *Room) uint16 {
+	id := uint16(atomic.AddUint32(&rm.counter, 1))
+	room.id = id
+	rm.rooms.Store(id, room)
+	return id
+}
+
+func (rm *RoomManager) Get(id uint16) (*Room, bool) {
+	v, ok := rm.rooms.Load(id)
+	if !ok {
+		return nil, false
+	}
+	return v.(*Room), true
+}
+
+func (rm *RoomManager) Delete(id uint16) {
+	rm.rooms.Delete(id)
+}
+
+func (rm *RoomManager) StartCleanup() {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		timeout := time.Duration(cfg.RoomIdleTimeout) * time.Second
+		rm.rooms.Range(func(key, value any) bool {
+			room := value.(*Room)
+			if time.Since(room.lastActivity) > timeout {
+				room.stop()
 			}
-		case KILLS:
-			go func(msg *pb.Message, room *Room) {
-				room.mu.RLock()
-				defer room.mu.RUnlock()
-				room.player[*msg.Id].mu.Lock()
-				defer room.player[*msg.Id].mu.Unlock()
-				room.player[*msg.Id].Kills++
-				msg.Payload = &pb.Payload{Kills: &room.player[*msg.Id].Kills}
-				data, err := proto.Marshal(msg)
-				if err != nil {
-					return
+			return true
+		})
+	}
+}
+
+type Room struct {
+	id           uint16
+	players      [MaxPlayers]*Player
+	bullets      []*pb.Bullet
+	events       chan *pb.Message
+	joins        chan JoinRequest
+	connects     chan ConnectRequest
+	done         chan struct{}
+	started      bool
+	lastActivity time.Time
+}
+
+func NewRoom(hostName, hostColor string) *Room {
+	room := &Room{
+		events:       make(chan *pb.Message, 64),
+		joins:        make(chan JoinRequest),
+		connects:     make(chan ConnectRequest),
+		bullets:      make([]*pb.Bullet, 0),
+		done:         make(chan struct{}),
+		lastActivity: time.Now(),
+	}
+	player := NewPlayer(0, hostName, hostColor)
+	player.Position = getSpawnPosition(0)
+	room.players[0] = player
+	return room
+}
+
+func (r *Room) Send(msg *pb.Message) {
+	select {
+	case r.events <- msg:
+	case <-r.done:
+	}
+}
+
+func (r *Room) Join(name, color string) JoinResponse {
+	resp := make(chan JoinResponse, 1)
+	select {
+	case r.joins <- JoinRequest{Name: name, Color: color, Response: resp}:
+		return <-resp
+	case <-r.done:
+		return JoinResponse{OK: false, Error: "room closed"}
+	}
+}
+
+func (r *Room) Connect(playerID int32, conn *net.Conn) ConnectResponse {
+	resp := make(chan ConnectResponse, 1)
+	select {
+	case r.connects <- ConnectRequest{PlayerID: playerID, Conn: conn, Response: resp}:
+		return <-resp
+	case <-r.done:
+		return ConnectResponse{OK: false}
+	}
+}
+
+func (r *Room) Run() {
+	defer r.cleanup()
+
+	ticker := time.NewTicker(TickRate * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.done:
+			return
+		case req := <-r.joins:
+			r.handleJoin(req)
+		case req := <-r.connects:
+			r.handleConnect(req)
+		case <-ticker.C:
+			if r.started {
+				r.tick()
+			}
+		case msg, ok := <-r.events:
+			if !ok {
+				return
+			}
+			r.handleEvent(msg)
+		}
+	}
+}
+
+func (r *Room) ReadLoop(playerID int32, conn *net.Conn) {
+	for {
+		data, err := wsutil.ReadClientBinary(*conn)
+		if err != nil {
+			return
+		}
+
+		var msg pb.Message
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			continue
+		}
+
+		if msg.Id == nil {
+			msg.Id = &playerID
+		}
+		r.Send(&msg)
+	}
+}
+
+func (r *Room) handleEvent(msg *pb.Message) {
+	r.lastActivity = time.Now()
+	switch msg.Event {
+	case EventDelete:
+		r.stop()
+	case EventStart:
+		r.onStart()
+	case EventMove:
+		r.onMove(msg)
+	case EventKick:
+		r.onKick(msg)
+	case EventReady:
+		r.onReady(msg)
+	case EventShoot:
+		r.onShoot(msg)
+	}
+}
+
+func (r *Room) handleJoin(req JoinRequest) {
+	r.lastActivity = time.Now()
+	if r.started {
+		req.Response <- JoinResponse{OK: false, Error: "game already started"}
+		return
+	}
+
+	slot := r.findEmptySlot()
+	if slot == -1 {
+		req.Response <- JoinResponse{OK: false, Error: "room is full"}
+		return
+	}
+
+	player := NewPlayer(int32(slot), req.Name, req.Color)
+	player.Position = getSpawnPosition(slot)
+	r.players[slot] = player
+
+	req.Response <- JoinResponse{PlayerID: slot, OK: true}
+}
+
+func (r *Room) handleConnect(req ConnectRequest) {
+	r.lastActivity = time.Now()
+	player := r.player(req.PlayerID)
+	if player == nil {
+		req.Response <- ConnectResponse{OK: false}
+		return
+	}
+
+	player.conn = req.Conn
+	players := r.playerList()
+
+	r.broadcast(&pb.Message{
+		Id:      &req.PlayerID,
+		Event:   EventJoin,
+		Payload: &pb.Payload{Players: players},
+	})
+
+	req.Response <- ConnectResponse{OK: true, Players: players}
+}
+
+func (r *Room) onStart() {
+	if r.started {
+		return
+	}
+	r.started = true
+
+	r.broadcast(&pb.Message{Event: EventStart})
+
+	idx := 0
+	for _, p := range r.players {
+		if p != nil {
+			p.Position = getSpawnPosition(idx)
+			p.Health = MaxHealth
+			p.Rotation = 0
+			idx++
+		}
+	}
+
+	r.broadcast(&pb.Message{
+		Event:   EventSpawn,
+		Payload: &pb.Payload{Players: r.playerList()},
+	})
+}
+
+func (r *Room) onMove(msg *pb.Message) {
+	if msg.Id == nil || msg.Payload == nil || msg.Payload.Position == nil {
+		return
+	}
+
+	player := r.player(*msg.Id)
+	if player == nil || !player.IsAlive() {
+		return
+	}
+
+	movement := msg.Payload.Position
+	angle := normalizeAngle(movement)
+	newPos := calculatePosition(player.Position, angle, PlayerSpeed)
+
+	inBush := isInBush(newPos)
+	collided := checkCollision(PlayerSize, newPos)
+
+	rotation := player.Rotation
+	if movement.X != 0 || movement.Y != 0 {
+		rotation = math.Atan2(movement.Y, movement.X)
+	}
+
+	msg.Payload.Rotation = &rotation
+	msg.Payload.InBush = &inBush
+
+	if collided {
+		msg.Payload.Position = player.Position
+	} else {
+		msg.Payload.Position = newPos
+	}
+
+	r.broadcast(msg)
+
+	player.Position = msg.Payload.Position
+	player.Rotation = rotation
+	player.InBush = inBush
+}
+
+func (r *Room) onKick(msg *pb.Message) {
+	if msg.Id == nil {
+		return
+	}
+
+	id := *msg.Id
+	if id < 0 || id >= MaxPlayers {
+		return
+	}
+
+	if id == 0 && !r.started {
+		r.closeRoom()
+		return
+	}
+
+	r.removePlayer(id)
+	r.broadcast(msg)
+
+	if r.started && r.aliveCount() <= 1 {
+		r.endGame()
+	}
+}
+
+func (r *Room) onReady(msg *pb.Message) {
+	if msg.Id == nil || msg.Payload == nil || msg.Payload.IsReady == nil {
+		return
+	}
+
+	player := r.player(*msg.Id)
+	if player == nil {
+		return
+	}
+
+	player.IsReady = *msg.Payload.IsReady
+	r.broadcast(msg)
+}
+
+func (r *Room) onShoot(msg *pb.Message) {
+	if msg.Id == nil {
+		return
+	}
+
+	player := r.player(*msg.Id)
+	if player == nil || !player.IsAlive() || player.Position == nil {
+		return
+	}
+
+	bullet := &pb.Bullet{
+		Id:       float64(time.Now().UnixNano()),
+		Position: &pb.Position{X: player.Position.X, Y: player.Position.Y},
+		Rotation: player.Rotation,
+		OwnerId:  *msg.Id,
+	}
+
+	r.bullets = append(r.bullets, bullet)
+	msg.Payload = &pb.Payload{Bullet: bullet}
+	r.broadcast(msg)
+}
+
+func (r *Room) tick() {
+	if len(r.bullets) == 0 {
+		return
+	}
+
+	active := make([]*pb.Bullet, 0, len(r.bullets))
+
+	for _, bullet := range r.bullets {
+		if bullet.Expired {
+			continue
+		}
+
+		newPos := calculatePosition(bullet.Position, bullet.Rotation, BulletSpeed)
+
+		if checkBulletCollision(newPos) {
+			bullet.Expired = true
+		}
+
+		if !bullet.Expired {
+			r.checkHit(bullet, newPos)
+		}
+
+		if !bullet.Expired {
+			bullet.Position = newPos
+			active = append(active, bullet)
+		}
+
+		var id int32 = 255
+		r.broadcast(&pb.Message{
+			Id:      &id,
+			Event:   EventShoot,
+			Payload: &pb.Payload{Bullet: bullet},
+		})
+	}
+
+	r.bullets = active
+
+	if r.aliveCount() <= 1 {
+		r.endGame()
+	}
+}
+
+func (r *Room) checkHit(bullet *pb.Bullet, pos *pb.Position) {
+	for _, p := range r.players {
+		if p == nil || p.Id == bullet.OwnerId || !p.IsAlive() || p.Position == nil {
+			continue
+		}
+
+		if math.Hypot(p.Position.X-pos.X, p.Position.Y-pos.Y) < PlayerSize {
+			bullet.Expired = true
+			p.Health -= BulletDamage
+
+			if p.Health <= 0 {
+				if shooter := r.player(bullet.OwnerId); shooter != nil {
+					shooter.Kills++
+					r.sendTo(shooter, &pb.Message{
+						Id:      &bullet.OwnerId,
+						Event:   EventKills,
+						Payload: &pb.Payload{Kills: &shooter.Kills},
+					})
 				}
-				_ = wsutil.WriteServerBinary(*room.player[*msg.Id].Conn, data)
-			}(msg, room)
-		default:
-			// doing nothing yet
+				r.removePlayer(p.Id)
+				r.broadcast(&pb.Message{Id: &p.Id, Event: EventKick})
+			} else {
+				health := p.Health
+				r.broadcast(&pb.Message{
+					Id:      &p.Id,
+					Event:   EventHit,
+					Payload: &pb.Payload{Health: &health},
+				})
+			}
+			return
 		}
 	}
 }
 
-func (room *Room) startGame(msg *pb.Message) {
-	go room.broadcastParallel(msg)
-	room.mu.Lock()
-	room.IsGameStarted = true
-	room.mu.Unlock()
-	room.mu.RLock()
-	defer room.mu.RUnlock()
-
-	data := pb.Message{
-		Event: SPAWN,
-		Payload: &pb.Payload{
-			Players: []*pb.Player{},
-		},
-	}
-
-	for _, player := range room.player {
-		if player != nil {
-			player.mu.RLock()
-			data.Payload.Players = append(data.Payload.Players, player.toProto())
-			player.mu.RUnlock()
-		}
-	}
-
-	data.Payload.Map = gameMap
-	go room.broadcastParallel(&data)
+func (r *Room) endGame() {
+	r.closeRoom()
 }
 
-func (room *Room) broadcastParallel(msg *pb.Message) {
+func (r *Room) closeRoom() {
+	for _, p := range r.players {
+		if p != nil {
+			r.removePlayer(p.Id)
+		}
+	}
+	r.stop()
+}
+
+func (r *Room) removePlayer(id int32) {
+	if id < 0 || id >= MaxPlayers {
+		return
+	}
+
+	p := r.players[id]
+	if p == nil {
+		return
+	}
+	r.players[id] = nil
+
+	if p.conn != nil {
+		r.sendTo(p, &pb.Message{
+			Id:      &id,
+			Event:   EventKick,
+			Payload: &pb.Payload{Kills: &p.Kills},
+		})
+		(*p.conn).Close()
+		p.conn = nil
+	}
+}
+
+func (r *Room) cleanup() {
+	for _, p := range r.players {
+		if p != nil && p.conn != nil {
+			(*p.conn).Close()
+			p.conn = nil
+		}
+	}
+	globalRooms.Delete(r.id)
+}
+
+func (r *Room) stop() {
+	select {
+	case <-r.done:
+	default:
+		close(r.done)
+	}
+}
+
+func (r *Room) player(id int32) *Player {
+	if id < 0 || id >= MaxPlayers {
+		return nil
+	}
+	return r.players[id]
+}
+
+func (r *Room) findEmptySlot() int {
+	for i, p := range r.players {
+		if p == nil {
+			return i
+		}
+	}
+	return -1
+}
+
+func (r *Room) playerList() []*pb.Player {
+	list := make([]*pb.Player, 0, MaxPlayers)
+	for _, p := range r.players {
+		if p != nil {
+			list = append(list, p.ToProto())
+		}
+	}
+	return list
+}
+
+func (r *Room) aliveCount() int {
+	count := 0
+	for _, p := range r.players {
+		if p != nil && p.IsAlive() {
+			count++
+		}
+	}
+	return count
+}
+
+func (r *Room) broadcast(msg *pb.Message) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return
 	}
-	room.mu.RLock()
-	defer room.mu.RUnlock()
-	for _, player := range room.player {
-		go func(player *Player) {
-			if player == nil {
-				return
-			}
-			player.mu.Lock()
-			defer player.mu.Unlock()
-			if player.Conn == nil {
-				return
-			}
-			_ = wsutil.WriteServerBinary(*player.Conn, data)
-		}(player)
+	for _, p := range r.players {
+		if p != nil && p.conn != nil {
+			wsutil.WriteServerBinary(*p.conn, data)
+		}
 	}
 }
 
-func (room *Room) kickPlayer(msg *pb.Message) {
-	go room.removePlayer(*msg.Id)
-	go func() {
-		room.mu.RLock()
-		defer room.mu.RUnlock()
-		if *msg.Id == 0 && !room.IsGameStarted {
-			for _, player := range room.player {
-				if player != nil {
-					go room.removePlayer(player.Id)
-				}
-			}
-			room.broadcast <- &pb.Message{
-				Event: DELETE,
-			}
-		}
-	}()
-	go room.broadcastParallel(msg)
-	var roomSize uint8
-	room.mu.RLock()
-	for _, player := range room.player {
-		if player != nil && player.Id != *msg.Id {
-			roomSize++
-		}
-	}
-	if roomSize <= 1 && room.IsGameStarted {
-		go room.broadcastGameOver()
-	}
-	room.mu.RUnlock()
-}
-
-func (room *Room) removePlayer(ID int32) {
-	room.mu.Lock()
-	defer room.mu.Unlock()
-	if room.player[ID] == nil {
+func (r *Room) sendTo(p *Player, msg *pb.Message) {
+	if p.conn == nil {
 		return
 	}
-	room.player[ID].mu.Lock()
-	data, _ := proto.Marshal(&pb.Message{
-		Id:      &ID,
-		Event:   KICK,
-		Payload: &pb.Payload{Kills: &room.player[ID].Kills},
-	})
-	wsutil.WriteServerBinary(*room.player[ID].Conn, data)
-	_ = (*room.player[ID].Conn).Close()
-	room.player[ID].Conn = nil
-	room.player[ID].mu.Unlock()
-	room.player[ID] = nil
-}
-
-func (room *Room) broadcastGameOver() {
-	room.mu.RLock()
-	defer room.mu.RUnlock()
-	for _, player := range room.player {
-		if player != nil {
-			go room.removePlayer(player.Id)
-		}
+	if data, err := proto.Marshal(msg); err == nil {
+		wsutil.WriteServerBinary(*p.conn, data)
 	}
-	room.broadcast <- &pb.Message{
-		Event: DELETE,
-	}
-}
-
-func (room *Room) broadcastMove(msg *pb.Message) {
-	var wg sync.WaitGroup
-	var movement = msg.Payload.Position
-	var angle = normalizeMovement(movement)
-	var newPosition pb.Position
-	var isCollided bool
-	var inGrass bool
-
-	room.mu.RLock()
-	defer room.mu.RUnlock()
-
-	room.player[*msg.Id].mu.RLock()
-	var currentPosition = room.player[*msg.Id].Position
-	room.player[*msg.Id].mu.RUnlock()
-
-	calculateNewPosition(currentPosition, &angle, PLAYER_SPEED, &newPosition)
-
-	wg.Add(2)
-	go checkInGrass(&newPosition, &inGrass, &wg)
-	go checkCollision(PLAYER_SIZE, &newPosition, &isCollided, &wg)
-
-	msg.Payload.InGrass = &inGrass
-
-	var Rotaion float64
-	if movement.X != 0 || movement.Y != 0 {
-		Rotaion = math.Atan2(movement.Y, movement.X)
-		msg.Payload.Rotation = &Rotaion
-	}
-
-	wg.Wait()
-
-	if !isCollided {
-		msg.Payload.Position = &newPosition
-	} else {
-		msg.Payload.Position = currentPosition
-	}
-	go room.broadcastParallel(msg)
-
-	room.player[*msg.Id].mu.Lock()
-	room.player[*msg.Id].Position = msg.Payload.Position
-	room.player[*msg.Id].Rotation = Rotaion
-	room.player[*msg.Id].InGrass = inGrass
-	room.player[*msg.Id].mu.Unlock()
 }

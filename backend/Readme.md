@@ -1,85 +1,80 @@
-# Pacman Backend
+# Battle Arena Game Server
 
-The backend server for Pacman - a high-performance real-time multiplayer game server built with Go 1.23, WebSocket, and Protocol Buffers.
+Real-time multiplayer game server in Go.
 
-## 🛠️ Tech Stack
-
-- **Language**: Go 1.23.2
-- **WebSocket**: Gobwas/ws for high-performance connections
-- **Data Serialization**: Protocol Buffers (protobuf)
-- **HTTP Server**: Standard Go net/http with custom routing
-- **Concurrency**: Go routines and channels
-
-## 📁 Project Structure
+## Structure
 
 ```
 backend/
-├── main.go              # HTTP server
-├── game.go              # Game physics and map generation
-├── room.go              # Room & player management, and game events
-├── network.go           # WebSocket handling and connection management
-├── proto/               # Protocol Buffer definitions (schema)
-└── message/             # Auto-generated protobuf bindings
+├── main.go       # Server setup, routes, HTTP handlers
+├── room.go       # Room management, event loop, game logic
+├── game.go       # Map loading, physics, collision detection
+├── player.go     # Player state management
+├── config.go     # Environment configuration
+├── middleware.go # CORS, recovery, request limits
+├── map/          # Game maps (JSON)
+└── message/      # Protobuf messages
 ```
 
-## 🚀 Getting Started
+## API
 
-### Prerequisites
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/rooms/create` | Create room |
+| POST | `/api/rooms/join?roomId=X` | Join room |
+| GET | `/api/play?playerId=X&roomId=Y` | WebSocket |
 
-- Go 1.23 or higher
-- Protocol Buffer compiler (protoc)
+## Events
 
-### Installation
+| Event | Description |
+|-------|-------------|
+| Join | Player joined, includes player list |
+| Ready | Player ready status changed |
+| Start | Game starting |
+| Spawn | Players spawned with positions |
+| Move | Player movement |
+| Shoot | Bullet fired/updated |
+| Hit | Player took damage |
+| Kick | Player removed/died |
+| Kills | Kill count updated |
 
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
+## Run
 
-2. **Install Go dependencies**
-   ```bash
-   go mod tidy
-   ```
+```bash
+go build -o server .
+./server
+```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` with your configuration:
-   ```env
-   ALLOWED_ORIGINS="*"
-   ```
+## Environment Variables
 
-4. **Start the server**
-   ```bash
-   go run .
-   ```
-   
-   The server will start on port 8080
+Create a `.env.local` file:
 
-## 🌐 API Endpoints
+```env
+PORT=8080
+ALLOWED_ORIGINS=*
+ROOM_IDLE_TIMEOUT=300
+MAX_REQUEST_BODY=4096
+```
 
-### HTTP Endpoints
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PORT | 8080 | Server port |
+| ALLOWED_ORIGINS | * | CORS origins (comma-separated) |
+| ROOM_IDLE_TIMEOUT | 300 | Idle room cleanup (seconds) |
+| MAX_REQUEST_BODY | 4096 | Max request body size (bytes) |
 
-- **POST** `/api/rooms/create` - Create a new game room
-- **POST** `/api/rooms/join` - Join an existing room
-- **GET** `/play` - Start the game
+## Game Constants
 
-## 📚 Additional Resources
+Edit in `game.go`:
 
-- [Go Documentation](https://golang.org/doc/)
-- [Protocol Buffers Guide](https://developers.google.com/protocol-buffers)
-- [Go WebSocket Libraries](https://github.com/gorilla/websocket)
+| Constant | Default | Description |
+|----------|---------|-------------|
+| PlayerSpeed | 4.5 | Movement speed |
+| BulletSpeed | 8.0 | Bullet speed |
+| PlayerSize | 22.0 | Hitbox radius |
+| MaxHealth | 100 | Starting health |
+| BulletDamage | 10 | Damage per hit |
+| MaxPlayers | 6 | Players per room |
+| TickRate | 16 | Game tick (ms) |
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Add tests if applicable
-5. Submit a pull request
-
----
-
-**Built with Go 1.23, WebSocket, and Protocol Buffers**

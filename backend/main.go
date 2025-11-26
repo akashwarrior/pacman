@@ -1,145 +1,199 @@
 package main
 
 import (
-	pb "battle-arena/message"
+	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
+
+	pb "pacman-server/message"
 
 	"github.com/gobwas/ws"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	if err := loadMap("./map/arena.json"); err != nil {
+		panic(err)
+	}
 
-	mux.HandleFunc("POST /api/rooms/create", createRoom)
-	mux.HandleFunc("POST /api/rooms/join", joinRoom)
-	mux.HandleFunc("GET /play", playGame)
+	go globalRooms.StartCleanup()
 
-	handler := enableCORS(mux)
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      newRouter(),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 
-	http.ListenAndServe(":8080", handler)
+	go waitForShutdown(srv)
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
+	}
 }
 
-func enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "battle-arena.akashgupta.tech")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
+func newRouter() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", handleHealth)
+	mux.HandleFunc("POST /api/rooms/create", handleCreateRoom)
+	mux.HandleFunc("POST /api/rooms/join", handleJoinRoom)
+	mux.HandleFunc("GET /api/play", handlePlay)
+	return withMiddleware(mux)
+}
+
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
+func waitForShutdown(srv *http.Server) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	srv.Shutdown(ctx)
+}
+
+func handleCreateRoom(w http.ResponseWriter, r *http.Request) {
+	name, color, err := parsePlayerInput(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	room := NewRoom(name, color)
+	roomID := globalRooms.Add(room)
+	go room.Run()
+
+	jsonResponse(w, http.StatusCreated, map[string]any{
+		"roomId":   roomID,
+		"playerId": int32(0),
 	})
 }
 
-func createRoom(w http.ResponseWriter, r *http.Request) {
-	var player Player
-
-	err := json.NewDecoder(r.Body).Decode(&player)
+func handleJoinRoom(w http.ResponseWriter, r *http.Request) {
+	roomID, err := parseUint(r.URL.Query().Get("roomId"), 16)
 	if err != nil {
-		http.Error(w, "Invalid Inputs", http.StatusBadRequest)
+		jsonError(w, "invalid room id", http.StatusBadRequest)
 		return
 	}
 
-	var roodId = ROOM_ID
-	ROOM_ID++
-
-	room := &Room{
-		player:        [6]*Player{},
-		broadcast:     make(chan *pb.Message),
-		ID:            roodId,
-		IsGameStarted: false,
-	}
-
-	var playerID int32 = 0
-	initializePlayer(&player, playerID)
-
-	room.player[playerID] = &player
-	rooms.Store(roodId, room)
-
-	go room.run()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]int32{"roomId": int32(roodId), "playerId": player.Id})
-}
-
-func joinRoom(w http.ResponseWriter, r *http.Request) {
-	var player Player
-	_, roomId, err := parseParams(r)
-
-	if roomId == 0 && err != nil {
-		http.Error(w, "Invalid Inputs", http.StatusBadRequest)
-		return
-	}
-
-	err = json.NewDecoder(r.Body).Decode(&player)
-	if err != nil {
-		http.Error(w, "Invalid Inputs", http.StatusBadRequest)
-		return
-	}
-
-	room, ok := rooms.Load(uint16(roomId))
-
-	if !ok || room.(*Room).IsGameStarted {
-		http.Error(w, "Invalid Request", http.StatusBadRequest)
-		return
-	}
-
-	var playerID *int32 = nil
-	for i, p := range room.(*Room).player {
-		if p == nil {
-			var index = int32(i)
-			playerID = &index
-			break
-		}
-	}
-
-	if playerID == nil {
-		http.Error(w, "Room is full", http.StatusBadRequest)
-		return
-	}
-
-	initializePlayer(&player, *playerID)
-
-	room.(*Room).player[*playerID] = &player
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]int32{"playerId": player.Id})
-}
-
-func initializePlayer(player *Player, id int32) {
-	player.Id = id
-	player.Health = 100
-	player.IsReady = false
-	player.Kills = 0
-	player.Rotation = 0
-	player.Position = &pb.Position{
-		X: float64(MAP_WIDTH/uint16(player.Id+1) - 200),
-		Y: float64(MAP_HEIGHT/uint16(player.Id+1) - 200),
-	}
-}
-
-func playGame(w http.ResponseWriter, r *http.Request) {
-	playerId, roomId, err := parseParams(r)
-	if err != nil {
-		http.Error(w, "Invalid Inputs", http.StatusBadRequest)
-		return
-	}
-
-	room, ok := rooms.Load(roomId)
+	room, ok := globalRooms.Get(uint16(roomID))
 	if !ok {
-		http.Error(w, "Invalid Room Id", http.StatusBadRequest)
+		jsonError(w, "room not found", http.StatusNotFound)
+		return
+	}
+
+	name, color, err := parsePlayerInput(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	resp := room.Join(name, color)
+	if !resp.OK {
+		jsonError(w, resp.Error, http.StatusBadRequest)
+		return
+	}
+
+	jsonResponse(w, http.StatusCreated, map[string]int32{
+		"playerId": int32(resp.PlayerID),
+	})
+}
+
+func handlePlay(w http.ResponseWriter, r *http.Request) {
+	playerID, err := parseUint(r.URL.Query().Get("playerId"), 32)
+	if err != nil || playerID < 0 || playerID >= MaxPlayers {
+		jsonError(w, "invalid player id", http.StatusBadRequest)
+		return
+	}
+
+	roomID, err := parseUint(r.URL.Query().Get("roomId"), 16)
+	if err != nil {
+		jsonError(w, "invalid room id", http.StatusBadRequest)
+		return
+	}
+
+	room, ok := globalRooms.Get(uint16(roomID))
+	if !ok {
+		jsonError(w, "room not found", http.StatusNotFound)
 		return
 	}
 
 	conn, _, _, err := ws.UpgradeHTTP(r, w)
 	if err != nil {
-		http.Error(w, "Failed to connect", http.StatusInternalServerError)
 		return
 	}
 
-	go handlePlayerConnection(playerId, &conn, room.(*Room))
+	go serveWebSocket(int32(playerID), &conn, room)
+}
+
+func serveWebSocket(playerID int32, conn *net.Conn, room *Room) {
+	resp := room.Connect(playerID, conn)
+	if !resp.OK {
+		(*conn).Close()
+		return
+	}
+
+	defer func() {
+		(*conn).Close()
+		room.Send(&pb.Message{Id: &playerID, Event: EventKick})
+	}()
+
+	room.ReadLoop(playerID, conn)
+}
+
+type playerInput struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+func parsePlayerInput(r *http.Request) (string, string, error) {
+	var input playerInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		return "", "", errors.New("invalid request body")
+	}
+
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return "", "", errors.New("name is required")
+	}
+	if len(name) > 20 {
+		name = name[:20]
+	}
+
+	color := strings.TrimSpace(input.Color)
+	if len(color) > 20 {
+		color = color[:20]
+	}
+
+	return name, color, nil
+}
+
+func jsonResponse(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+func jsonError(w http.ResponseWriter, msg string, status int) {
+	jsonResponse(w, status, map[string]string{"error": msg})
+}
+
+func parseUint(s string, bits int) (int, error) {
+	n, err := strconv.ParseUint(s, 10, bits)
+	if err != nil {
+		return 0, err
+	}
+	return int(n), nil
 }
