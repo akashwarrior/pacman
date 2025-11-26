@@ -1,12 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    cssChunking: true,
-    webpackBuildWorker: true,
-    parallelServerCompiles: true,
-    parallelServerBuildTraces: true,
-  },
+  /* config options here */
+  reactCompiler: true,
 };
 
 export default nextConfig;
