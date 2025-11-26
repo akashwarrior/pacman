@@ -1,21 +1,78 @@
-import { Bullet, GameMap, Player } from "@/types/message";
+import {
+  Position as _Position,
+  Bullet as _Bullet,
+  Player as _Player,
+} from './message'
 
-export interface GameState {
-    players: Player[];
-    bullets: Bullet[];
-    map: GameMap
+export interface Position extends Required<_Position> { }
+
+export interface Bullet extends Required<_Bullet & { position: Position }> { }
+
+export interface Player extends Required<_Player & { position: Position }> { }
+
+export interface Wall {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  variant: number;
 }
 
-export const SOCKET_EVENT = {
-    JOIN: "Join",
-    READY: "Ready",
-    LEAVE: "Leave",
-    SPAWN: "Spawn",
-    MOVE: "Move",
-    SHOOT: "Shoot",
-    HIT: "Hit",
-    KICK: "Kick",
-    START: "Start",
-    KILLS: "Kills",
-    GAME_OVER: "Game Over"
+export interface Water {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface Bush {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+export interface Tree {
+  x: number;
+  y: number;
+  size: number;
+}
+
+export interface Rock {
+  x: number;
+  y: number;
+  size: number;
+  variant: number;
+}
+
+export interface Crate {
+  id: number;
+  x: number;
+  y: number;
+  health: number;
+}
+
+export interface SpawnPoint {
+  x: number;
+  y: number;
+}
+
+export interface GameMap {
+  width: number;
+  height: number;
+  theme: string;
+  walls: Wall[];
+  water: Water[];
+  bushes: Bush[];
+  trees: Tree[];
+  rocks: Rock[];
+  crates: Crate[];
+  spawnPoints: SpawnPoint[];
+}
+
+export interface GameState {
+  players: Map<number, Player>;
+  bullets: Map<number, Bullet>;
+  playerId: number;
+  isGameOver: boolean;
+  time: number;
 }

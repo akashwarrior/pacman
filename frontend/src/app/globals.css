@@ -1,35 +1,25 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 :root {
-  --background: 230 25% 5%;
-  --foreground: 210 40% 98%;
-
+  /* Base theme colors */
   --muted: 230 25% 10%;
   --muted-foreground: 210 40% 60%;
-
   --accent: 230 50% 15%;
   --accent-foreground: 210 40% 98%;
-
   --popover: 230 25% 8%;
   --popover-foreground: 210 40% 98%;
-
   --border: 230 25% 15%;
   --input: 230 25% 15%;
-
   --card: 230 25% 8%;
   --card-foreground: 210 40% 98%;
-
   --primary: 230 100% 65%;
   --primary-foreground: 210 40% 98%;
-
   --secondary: 230 25% 15%;
   --secondary-foreground: 210 40% 98%;
-
   --destructive: 0 100% 65%;
   --destructive-foreground: 210 40% 98%;
-
   --ring: 230 100% 65%;
-
   --radius: 1rem;
 
   /* Game theme colors */
@@ -73,8 +63,9 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  body,
+  html {
+    @apply bg-black relative min-h-full flex flex-col items-center h-full w-full;
   }
 
   *,
@@ -86,14 +77,12 @@
   }
 }
 
-@keyframes pulse {
-
+@keyframes pulse-slow {
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
-
   50% {
     opacity: 0.8;
     transform: scale(0.97);
@@ -101,29 +90,7 @@
 }
 
 .animate-pulse-slow {
-  animation: pulse 3s ease-in-out infinite;
-}
-
-.glass {
-  background: linear-gradient(135deg,
-      hsl(var(--background) / 0.2),
-      hsl(var(--background) / 0.1));
-  backdrop-filter: blur(12px);
-  border: 1px solid hsl(var(--border) / 0.2);
-  box-shadow: 0 8px 32px hsl(var(--background) / 0.2);
-}
-
-.game-bg {
-  background:
-    radial-gradient(circle at 0% 0%, hsl(var(--neon-blue) / 0.15), transparent 50%),
-    radial-gradient(circle at 100% 0%, hsl(var(--neon-purple) / 0.15), transparent 50%),
-    radial-gradient(circle at 100% 100%, hsl(var(--neon-pink) / 0.15), transparent 50%),
-    radial-gradient(circle at 0% 100%, hsl(var(--neon-yellow) / 0.15), transparent 50%);
-}
-
-.neon-border {
-  border: 1px solid hsl(var(--primary));
-  box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  animation: pulse-slow 3s ease-in-out infinite;
 }
 
 .drop-shadow-glow {
