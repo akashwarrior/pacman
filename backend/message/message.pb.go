@@ -159,7 +159,6 @@ type Player struct {
 	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
 	Position      *Position              `protobuf:"bytes,4,opt,name=position,proto3" json:"position,omitempty"`
 	IsReady       bool                   `protobuf:"varint,5,opt,name=is_ready,json=isReady,proto3" json:"is_ready,omitempty"`
-	InBush        bool                   `protobuf:"varint,6,opt,name=in_bush,json=inBush,proto3" json:"in_bush,omitempty"`
 	Rotation      float64                `protobuf:"fixed64,7,opt,name=rotation,proto3" json:"rotation,omitempty"`
 	Kills         int32                  `protobuf:"varint,8,opt,name=kills,proto3" json:"kills,omitempty"`
 	Health        int32                  `protobuf:"varint,9,opt,name=health,proto3" json:"health,omitempty"`
@@ -233,13 +232,6 @@ func (x *Player) GetIsReady() bool {
 	return false
 }
 
-func (x *Player) GetInBush() bool {
-	if x != nil {
-		return x.InBush
-	}
-	return false
-}
-
 func (x *Player) GetRotation() float64 {
 	if x != nil {
 		return x.Rotation
@@ -275,7 +267,6 @@ type Payload struct {
 	Position      *Position              `protobuf:"bytes,2,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Bullet        *Bullet                `protobuf:"bytes,3,opt,name=bullet,proto3,oneof" json:"bullet,omitempty"`
 	IsReady       *bool                  `protobuf:"varint,5,opt,name=is_ready,json=isReady,proto3,oneof" json:"is_ready,omitempty"`
-	InBush        *bool                  `protobuf:"varint,6,opt,name=in_bush,json=inBush,proto3,oneof" json:"in_bush,omitempty"`
 	Health        *int32                 `protobuf:"varint,7,opt,name=health,proto3,oneof" json:"health,omitempty"`
 	Rotation      *float64               `protobuf:"fixed64,8,opt,name=rotation,proto3,oneof" json:"rotation,omitempty"`
 	Kills         *int32                 `protobuf:"varint,9,opt,name=kills,proto3,oneof" json:"kills,omitempty"`
@@ -337,13 +328,6 @@ func (x *Payload) GetBullet() *Bullet {
 func (x *Payload) GetIsReady() bool {
 	if x != nil && x.IsReady != nil {
 		return *x.IsReady
-	}
-	return false
-}
-
-func (x *Payload) GetInBush() bool {
-	if x != nil && x.InBush != nil {
-		return *x.InBush
 	}
 	return false
 }
@@ -451,34 +435,30 @@ const file_proto_message_proto_rawDesc = "" +
 	"\bposition\x18\x02 \x01(\v2\t.PositionR\bposition\x12\x1a\n" +
 	"\brotation\x18\x03 \x01(\x01R\brotation\x12\x18\n" +
 	"\aexpired\x18\x04 \x01(\bR\aexpired\x12\x19\n" +
-	"\bowner_id\x18\x05 \x01(\x05R\aownerId\"\x86\x02\n" +
+	"\bowner_id\x18\x05 \x01(\x05R\aownerId\"\xed\x01\n" +
 	"\x06Player\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05color\x18\x03 \x01(\tR\x05color\x12%\n" +
 	"\bposition\x18\x04 \x01(\v2\t.PositionR\bposition\x12\x19\n" +
-	"\bis_ready\x18\x05 \x01(\bR\aisReady\x12\x17\n" +
-	"\ain_bush\x18\x06 \x01(\bR\x06inBush\x12\x1a\n" +
+	"\bis_ready\x18\x05 \x01(\bR\aisReady\x12\x1a\n" +
 	"\brotation\x18\a \x01(\x01R\brotation\x12\x14\n" +
 	"\x05kills\x18\b \x01(\x05R\x05kills\x12\x16\n" +
 	"\x06health\x18\t \x01(\x05R\x06health\x12\x1d\n" +
 	"\n" +
 	"max_health\x18\n" +
-	" \x01(\x05R\tmaxHealth\"\xe8\x02\n" +
+	" \x01(\x05R\tmaxHealth\"\xbe\x02\n" +
 	"\aPayload\x12!\n" +
 	"\aplayers\x18\x01 \x03(\v2\a.PlayerR\aplayers\x12*\n" +
 	"\bposition\x18\x02 \x01(\v2\t.PositionH\x00R\bposition\x88\x01\x01\x12$\n" +
 	"\x06bullet\x18\x03 \x01(\v2\a.BulletH\x01R\x06bullet\x88\x01\x01\x12\x1e\n" +
-	"\bis_ready\x18\x05 \x01(\bH\x02R\aisReady\x88\x01\x01\x12\x1c\n" +
-	"\ain_bush\x18\x06 \x01(\bH\x03R\x06inBush\x88\x01\x01\x12\x1b\n" +
-	"\x06health\x18\a \x01(\x05H\x04R\x06health\x88\x01\x01\x12\x1f\n" +
-	"\brotation\x18\b \x01(\x01H\x05R\brotation\x88\x01\x01\x12\x19\n" +
-	"\x05kills\x18\t \x01(\x05H\x06R\x05kills\x88\x01\x01B\v\n" +
+	"\bis_ready\x18\x05 \x01(\bH\x02R\aisReady\x88\x01\x01\x12\x1b\n" +
+	"\x06health\x18\a \x01(\x05H\x03R\x06health\x88\x01\x01\x12\x1f\n" +
+	"\brotation\x18\b \x01(\x01H\x04R\brotation\x88\x01\x01\x12\x19\n" +
+	"\x05kills\x18\t \x01(\x05H\x05R\x05kills\x88\x01\x01B\v\n" +
 	"\t_positionB\t\n" +
 	"\a_bulletB\v\n" +
-	"\t_is_readyB\n" +
-	"\n" +
-	"\b_in_bushB\t\n" +
+	"\t_is_readyB\t\n" +
 	"\a_healthB\v\n" +
 	"\t_rotationB\b\n" +
 	"\x06_kills\"\x84\x01\n" +

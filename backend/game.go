@@ -72,15 +72,6 @@ func normalizeAngle(movement *pb.Position) float64 {
 	return math.Atan2(movement.Y/mag, movement.X/mag)
 }
 
-func isInBush(pos *pb.Position) bool {
-	for _, b := range gameMap.Bushes {
-		if math.Hypot(pos.X-float64(b.X), pos.Y-float64(b.Y)) < float64(b.Radius) {
-			return true
-		}
-	}
-	return false
-}
-
 func checkCollision(size float64, pos *pb.Position) bool {
 	w, h := float64(gameMap.Width), float64(gameMap.Height)
 

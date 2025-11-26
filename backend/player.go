@@ -34,7 +34,6 @@ func (p *Player) ToProto() *pb.Player {
 		Kills:     p.Kills,
 		Rotation:  p.Rotation,
 		Position:  p.Position,
-		InBush:    p.InBush,
 	}
 }
 

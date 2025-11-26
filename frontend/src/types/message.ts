@@ -31,7 +31,6 @@ export interface Player {
   color: string;
   position: Position | undefined;
   isReady: boolean;
-  inBush: boolean;
   rotation: number;
   kills: number;
   health: number;
@@ -44,7 +43,6 @@ export interface Payload {
   position?: Position | undefined;
   bullet?: Bullet | undefined;
   isReady?: boolean | undefined;
-  inBush?: boolean | undefined;
   health?: number | undefined;
   rotation?: number | undefined;
   kills?: number | undefined;
@@ -267,7 +265,6 @@ function createBasePlayer(): Player {
     color: "",
     position: undefined,
     isReady: false,
-    inBush: false,
     rotation: 0,
     kills: 0,
     health: 0,
@@ -291,9 +288,6 @@ export const Player: MessageFns<Player> = {
     }
     if (message.isReady !== false) {
       writer.uint32(40).bool(message.isReady);
-    }
-    if (message.inBush !== false) {
-      writer.uint32(48).bool(message.inBush);
     }
     if (message.rotation !== 0) {
       writer.uint32(57).double(message.rotation);
@@ -357,14 +351,6 @@ export const Player: MessageFns<Player> = {
           message.isReady = reader.bool();
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.inBush = reader.bool();
-          continue;
-        }
         case 7: {
           if (tag !== 57) {
             break;
@@ -413,7 +399,6 @@ export const Player: MessageFns<Player> = {
       color: isSet(object.color) ? globalThis.String(object.color) : "",
       position: isSet(object.position) ? Position.fromJSON(object.position) : undefined,
       isReady: isSet(object.isReady) ? globalThis.Boolean(object.isReady) : false,
-      inBush: isSet(object.inBush) ? globalThis.Boolean(object.inBush) : false,
       rotation: isSet(object.rotation) ? globalThis.Number(object.rotation) : 0,
       kills: isSet(object.kills) ? globalThis.Number(object.kills) : 0,
       health: isSet(object.health) ? globalThis.Number(object.health) : 0,
@@ -437,9 +422,6 @@ export const Player: MessageFns<Player> = {
     }
     if (message.isReady !== false) {
       obj.isReady = message.isReady;
-    }
-    if (message.inBush !== false) {
-      obj.inBush = message.inBush;
     }
     if (message.rotation !== 0) {
       obj.rotation = message.rotation;
@@ -468,7 +450,6 @@ export const Player: MessageFns<Player> = {
       ? Position.fromPartial(object.position)
       : undefined;
     message.isReady = object.isReady ?? false;
-    message.inBush = object.inBush ?? false;
     message.rotation = object.rotation ?? 0;
     message.kills = object.kills ?? 0;
     message.health = object.health ?? 0;
@@ -483,7 +464,6 @@ function createBasePayload(): Payload {
     position: undefined,
     bullet: undefined,
     isReady: undefined,
-    inBush: undefined,
     health: undefined,
     rotation: undefined,
     kills: undefined,
@@ -503,9 +483,6 @@ export const Payload: MessageFns<Payload> = {
     }
     if (message.isReady !== undefined) {
       writer.uint32(40).bool(message.isReady);
-    }
-    if (message.inBush !== undefined) {
-      writer.uint32(48).bool(message.inBush);
     }
     if (message.health !== undefined) {
       writer.uint32(56).int32(message.health);
@@ -558,14 +535,6 @@ export const Payload: MessageFns<Payload> = {
           message.isReady = reader.bool();
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.inBush = reader.bool();
-          continue;
-        }
         case 7: {
           if (tag !== 56) {
             break;
@@ -605,7 +574,6 @@ export const Payload: MessageFns<Payload> = {
       position: isSet(object.position) ? Position.fromJSON(object.position) : undefined,
       bullet: isSet(object.bullet) ? Bullet.fromJSON(object.bullet) : undefined,
       isReady: isSet(object.isReady) ? globalThis.Boolean(object.isReady) : undefined,
-      inBush: isSet(object.inBush) ? globalThis.Boolean(object.inBush) : undefined,
       health: isSet(object.health) ? globalThis.Number(object.health) : undefined,
       rotation: isSet(object.rotation) ? globalThis.Number(object.rotation) : undefined,
       kills: isSet(object.kills) ? globalThis.Number(object.kills) : undefined,
@@ -625,9 +593,6 @@ export const Payload: MessageFns<Payload> = {
     }
     if (message.isReady !== undefined) {
       obj.isReady = message.isReady;
-    }
-    if (message.inBush !== undefined) {
-      obj.inBush = message.inBush;
     }
     if (message.health !== undefined) {
       obj.health = Math.round(message.health);
@@ -654,7 +619,6 @@ export const Payload: MessageFns<Payload> = {
       ? Bullet.fromPartial(object.bullet)
       : undefined;
     message.isReady = object.isReady ?? undefined;
-    message.inBush = object.inBush ?? undefined;
     message.health = object.health ?? undefined;
     message.rotation = object.rotation ?? undefined;
     message.kills = object.kills ?? undefined;

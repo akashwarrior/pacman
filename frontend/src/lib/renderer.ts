@@ -1,4 +1,4 @@
-import type { GameState, Player, Bullet, GameMap, Wall, Water, Bush, Tree, Rock, Crate } from "@/types";
+import type { GameState, Player, Bullet } from "@/types";
 import { MAP, PLAYER, BULLET, OBJECTS, EFFECTS, COLORS } from "./constants/game";
 import ARENA_MAP from "@/../public/map/arena.json";
 
@@ -34,7 +34,7 @@ export function renderGame(
   renderBullets(ctx, state.bullets, cameraX, cameraY, width, height);
   renderPlayers(ctx, state.players, state.playerId, cameraX, cameraY, width, height);
 
-  renderBushTop(ctx, state.players, state.playerId, cameraX, cameraY, width, height);
+  renderBushTop(ctx, cameraX, cameraY, width, height);
   renderTrees(ctx, cameraX, cameraY, width, height);
 
   renderBorder(ctx);
@@ -58,60 +58,62 @@ function renderGround(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: 
   for (let x = startX; x < endX; x += tile) {
     for (let y = startY; y < endY; y += tile) {
       const noise = ((x * 7 + y * 13) % 100) / 100;
-      ctx.fillStyle = noise > 0.7 ? COLORS.GROUND_LIGHT : noise > 0.3 ? COLORS.GROUND_BASE : COLORS.GROUND_DARK;
+      
+      ctx.fillStyle = noise > 0.6 ? COLORS.GROUND_LIGHT : noise > 0.3 ? COLORS.GROUND_BASE : COLORS.GROUND_DARK;
       ctx.fillRect(x, y, tile, tile);
 
-      if (noise > 0.5) {
+      // Subtle grass accent
+      if (noise > 0.7) {
         ctx.fillStyle = COLORS.GROUND_ACCENT;
+        ctx.globalAlpha = 0.3;
         ctx.beginPath();
-        ctx.arc(x + noise * 40, y + (1 - noise) * 40, 3, 0, Math.PI * 2);
+        ctx.arc(x + noise * 50 + 15, y + (1 - noise) * 50 + 15, 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.globalAlpha = 1;
       }
     }
   }
 }
 
 function renderWater(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number): void {
-  const wave = Math.sin(animationTime * EFFECTS.WATER_WAVE_SPEED) * 3;
+  const wave = Math.sin(animationTime * EFFECTS.WATER_WAVE_SPEED) * 2;
 
   for (const water of ARENA_MAP.water) {
     if (!isVisible(water.x + water.width / 2, water.y + water.height / 2, Math.max(water.width, water.height), cx, cy, w, h)) continue;
 
+    // Shadow
     ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
     ctx.fillRect(water.x + 4, water.y + 4, water.width, water.height);
 
-    ctx.fillStyle = COLORS.WATER_DEEP;
+    // Water gradient
+    const waterGradient = ctx.createLinearGradient(water.x, water.y, water.x, water.y + water.height);
+    waterGradient.addColorStop(0, COLORS.WATER_LIGHT);
+    waterGradient.addColorStop(1, COLORS.WATER_DEEP);
+    
+    ctx.fillStyle = waterGradient;
     ctx.fillRect(water.x, water.y, water.width, water.height);
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(water.x, water.y, water.width, water.height);
-    ctx.clip();
-
-    const waveCount = Math.floor(water.height / 20);
-    for (let i = 0; i < waveCount; i++) {
-      const waveY = water.y + i * 20 + wave;
-      ctx.fillStyle = `rgba(52, 152, 219, ${0.3 - i * 0.02})`;
-      ctx.beginPath();
-      ctx.moveTo(water.x, waveY);
-      for (let x = water.x; x <= water.x + water.width; x += 10) {
-        ctx.lineTo(x, waveY + Math.sin((x + animationTime * 0.002) * 0.1) * 5);
+    // Simple wave lines
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const waveY = water.y + 20 + i * 25 + wave;
+      if (waveY < water.y + water.height - 10) {
+        ctx.beginPath();
+        ctx.moveTo(water.x + 10, waveY);
+        ctx.bezierCurveTo(
+          water.x + water.width * 0.3, waveY - 5,
+          water.x + water.width * 0.7, waveY + 5,
+          water.x + water.width - 10, waveY
+        );
+        ctx.stroke();
       }
-      ctx.lineTo(water.x + water.width, water.y + water.height);
-      ctx.lineTo(water.x, water.y + water.height);
-      ctx.closePath();
-      ctx.fill();
     }
 
-    ctx.fillStyle = COLORS.WATER_HIGHLIGHT;
-    ctx.globalAlpha = 0.4;
-    ctx.fillRect(water.x + 10, water.y + 10 + wave, water.width - 20, 4);
-    ctx.globalAlpha = 1;
-    ctx.restore();
-
-    ctx.strokeStyle = COLORS.WATER_FOAM;
+    // Border
+    ctx.strokeStyle = COLORS.WATER_DEEP;
     ctx.lineWidth = 3;
-    ctx.strokeRect(water.x + 1, water.y + 1, water.width - 2, water.height - 2);
+    ctx.strokeRect(water.x, water.y, water.width, water.height);
   }
 }
 
@@ -125,19 +127,23 @@ function renderWalls(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
         ? { main: COLORS.WALL_METAL, dark: COLORS.WALL_METAL_DARK }
         : { main: COLORS.WALL_STONE, dark: COLORS.WALL_STONE_DARK };
 
-    ctx.fillStyle = COLORS.SHADOW;
-    ctx.fillRect(wall.x + 6, wall.y + 6, wall.width, wall.height);
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+    ctx.fillRect(wall.x + 5, wall.y + 5, wall.width, wall.height);
 
+    // Wall base (3D side)
     ctx.fillStyle = colors.dark;
     ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
 
+    // Wall top
     ctx.fillStyle = colors.main;
     ctx.fillRect(wall.x, wall.y, wall.width, wall.height - 8);
 
-    ctx.strokeStyle = colors.dark;
-    ctx.lineWidth = 1;
+    // Simple brick pattern for variant 1
     if (wall.variant === 1) {
-      const bw = 24, bh = 12;
+      ctx.strokeStyle = colors.dark;
+      ctx.lineWidth = 1;
+      const bw = 25, bh = 12;
       for (let y = wall.y; y < wall.y + wall.height - 8; y += bh) {
         const offset = ((y - wall.y) / bh) % 2 === 0 ? 0 : bw / 2;
         for (let x = wall.x + offset; x < wall.x + wall.width; x += bw) {
@@ -146,10 +152,9 @@ function renderWalls(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
       }
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.fillRect(wall.x, wall.y, wall.width, 4);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-    ctx.fillRect(wall.x, wall.y + wall.height - 8, wall.width, 8);
+    // Highlight
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(wall.x, wall.y, wall.width, 3);
   }
 }
 
@@ -157,11 +162,13 @@ function renderBushBase(ctx: CanvasRenderingContext2D, cx: number, cy: number, w
   for (const bush of ARENA_MAP.bushes) {
     if (!isVisible(bush.x, bush.y, bush.radius * 2, cx, cy, w, h)) continue;
 
-    ctx.fillStyle = COLORS.SHADOW;
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
     ctx.beginPath();
     ctx.ellipse(bush.x + 4, bush.y + bush.radius * 0.3, bush.radius * 1.1, bush.radius * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Dark base
     ctx.fillStyle = COLORS.BUSH_DARK;
     ctx.beginPath();
     ctx.arc(bush.x, bush.y, bush.radius, 0, Math.PI * 2);
@@ -169,40 +176,25 @@ function renderBushBase(ctx: CanvasRenderingContext2D, cx: number, cy: number, w
   }
 }
 
-function renderBushTop(ctx: CanvasRenderingContext2D, players: Map<number, Player>, playerId: number, cx: number, cy: number, w: number, h: number): void {
+function renderBushTop(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number): void {
   for (const bush of ARENA_MAP.bushes) {
     if (!isVisible(bush.x, bush.y, bush.radius * 2, cx, cy, w, h)) continue;
 
     const sway = Math.sin(animationTime * EFFECTS.BUSH_WAVE_SPEED + bush.x * 0.1) * 2;
-    const currentPlayer = players.get(playerId);
-    const playerInBush = currentPlayer && Math.hypot(currentPlayer.position.x - bush.x, currentPlayer.position.y - bush.y) < bush.radius;
 
+    // Main gradient
     const gradient = ctx.createRadialGradient(
       bush.x + sway - bush.radius * 0.3, bush.y - bush.radius * 0.3, 0,
       bush.x + sway, bush.y, bush.radius
     );
     gradient.addColorStop(0, COLORS.BUSH_HIGHLIGHT);
-    gradient.addColorStop(0.4, COLORS.BUSH_LIGHT);
-    gradient.addColorStop(0.7, COLORS.BUSH_MID);
+    gradient.addColorStop(0.5, COLORS.BUSH_LIGHT);
     gradient.addColorStop(1, COLORS.BUSH_DARK);
 
-    ctx.globalAlpha = playerInBush ? 0.5 : 1;
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(bush.x + sway, bush.y, bush.radius * 0.95, 0, Math.PI * 2);
+    ctx.arc(bush.x + sway, bush.y, bush.radius * 0.9, 0, Math.PI * 2);
     ctx.fill();
-
-    const leafCount = Math.floor(bush.radius / 8);
-    for (let i = 0; i < leafCount; i++) {
-      const angle = (i / leafCount) * Math.PI * 2;
-      const lx = bush.x + sway + Math.cos(angle) * bush.radius * 0.7;
-      const ly = bush.y + Math.sin(angle) * bush.radius * 0.7;
-      ctx.fillStyle = i % 2 === 0 ? COLORS.BUSH_LIGHT : COLORS.BUSH_MID;
-      ctx.beginPath();
-      ctx.ellipse(lx, ly, 8, 5, angle, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
   }
 }
 
@@ -213,14 +205,16 @@ function renderTrees(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
 
     const sway = Math.sin(animationTime * EFFECTS.TREE_SWAY_SPEED + tree.x * 0.05) * (2 + tree.size);
 
-    ctx.fillStyle = COLORS.SHADOW;
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
     ctx.beginPath();
-    ctx.ellipse(tree.x + 8, tree.y + baseSize * 0.5, baseSize * 1.2, baseSize * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(tree.x + 6, tree.y + baseSize * 0.4, baseSize * 1.1, baseSize * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
 
     const tw = 12 + tree.size * 4;
     const th = 30 + tree.size * 15;
 
+    // Trunk
     ctx.fillStyle = COLORS.TREE_TRUNK;
     ctx.beginPath();
     ctx.moveTo(tree.x - tw / 2, tree.y);
@@ -230,6 +224,7 @@ function renderTrees(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
     ctx.closePath();
     ctx.fill();
 
+    // Trunk dark side
     ctx.fillStyle = COLORS.TREE_TRUNK_DARK;
     ctx.beginPath();
     ctx.moveTo(tree.x - tw / 2, tree.y);
@@ -240,17 +235,19 @@ function renderTrees(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
     ctx.fill();
 
     const foliageY = tree.y - th;
+    
+    // Foliage layers
     for (let layer = 2; layer >= 0; layer--) {
-      const layerSize = baseSize * (1 - layer * 0.2);
-      const ly = foliageY - layer * baseSize * 0.4;
-      const ls = sway * (1 + layer * 0.3);
+      const layerSize = baseSize * (1 - layer * 0.15);
+      const ly = foliageY - layer * baseSize * 0.35;
+      const ls = sway * (1 + layer * 0.2);
 
       const gradient = ctx.createRadialGradient(
         tree.x + ls - layerSize * 0.3, ly - layerSize * 0.3, 0,
         tree.x + ls, ly, layerSize
       );
       gradient.addColorStop(0, COLORS.TREE_LEAVES_LIGHT);
-      gradient.addColorStop(0.5, COLORS.TREE_LEAVES_MID);
+      gradient.addColorStop(0.6, COLORS.TREE_LEAVES_MID);
       gradient.addColorStop(1, COLORS.TREE_LEAVES_DARK);
 
       ctx.fillStyle = gradient;
@@ -265,25 +262,27 @@ function renderRocks(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
   for (const rock of ARENA_MAP.rocks) {
     if (!isVisible(rock.x, rock.y, rock.size * 2, cx, cy, w, h)) continue;
 
-    ctx.fillStyle = COLORS.SHADOW;
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
     ctx.beginPath();
-    ctx.ellipse(rock.x + 4, rock.y + rock.size * 0.3, rock.size * 1.1, rock.size * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(rock.x + 3, rock.y + rock.size * 0.3, rock.size * 1.1, rock.size * 0.45, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Rock gradient
     const gradient = ctx.createRadialGradient(
       rock.x - rock.size * 0.3, rock.y - rock.size * 0.3, 0,
       rock.x, rock.y, rock.size
     );
     gradient.addColorStop(0, COLORS.ROCK_HIGHLIGHT);
-    gradient.addColorStop(0.4, COLORS.ROCK_LIGHT);
-    gradient.addColorStop(0.7, COLORS.ROCK_MID);
+    gradient.addColorStop(0.5, COLORS.ROCK_LIGHT);
     gradient.addColorStop(1, COLORS.ROCK_DARK);
 
+    // Irregular shape
     ctx.fillStyle = gradient;
     ctx.beginPath();
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
-      const variance = 0.8 + ((rock.variant + i) % 3) * 0.15;
+      const variance = 0.8 + ((rock.variant + i) % 3) * 0.12;
       const px = rock.x + Math.cos(angle) * rock.size * variance;
       const py = rock.y + Math.sin(angle) * rock.size * variance;
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
@@ -291,9 +290,10 @@ function renderRocks(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: n
     ctx.closePath();
     ctx.fill();
 
+    // Highlight
     ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
     ctx.beginPath();
-    ctx.ellipse(rock.x - rock.size * 0.3, rock.y - rock.size * 0.3, rock.size * 0.3, rock.size * 0.2, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(rock.x - rock.size * 0.25, rock.y - rock.size * 0.25, rock.size * 0.25, rock.size * 0.15, -0.5, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -306,31 +306,37 @@ function renderCrates(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: 
     if (crate.health <= 0) continue;
     if (!isVisible(crate.x, crate.y, size, cx, cy, w, h)) continue;
 
-    ctx.fillStyle = COLORS.SHADOW;
-    ctx.fillRect(crate.x - half + 5, crate.y - half + 5, size, size);
+    // Shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.fillRect(crate.x - half + 4, crate.y - half + 4, size, size);
 
+    // Crate base
     ctx.fillStyle = COLORS.CRATE_DARK;
     ctx.fillRect(crate.x - half, crate.y - half, size, size);
 
+    // Crate top
     ctx.fillStyle = COLORS.CRATE_WOOD;
-    ctx.fillRect(crate.x - half, crate.y - half, size, size - 6);
+    ctx.fillRect(crate.x - half, crate.y - half, size, size - 5);
 
+    // Plank lines
     ctx.strokeStyle = COLORS.CRATE_DARK;
     ctx.lineWidth = 2;
     for (let i = 1; i < 3; i++) {
-      const py = crate.y - half + i * (size - 6) / 3;
+      const py = crate.y - half + i * (size - 5) / 3;
       ctx.beginPath();
-      ctx.moveTo(crate.x - half, py);
-      ctx.lineTo(crate.x + half, py);
+      ctx.moveTo(crate.x - half + 2, py);
+      ctx.lineTo(crate.x + half - 2, py);
       ctx.stroke();
     }
 
+    // Metal bands
     ctx.fillStyle = "#555";
-    ctx.fillRect(crate.x - half - 2, crate.y - half + 5, 4, size - 10);
-    ctx.fillRect(crate.x + half - 2, crate.y - half + 5, 4, size - 10);
+    ctx.fillRect(crate.x - half - 1, crate.y - half + 4, 3, size - 8);
+    ctx.fillRect(crate.x + half - 2, crate.y - half + 4, 3, size - 8);
 
+    // Highlight
     ctx.fillStyle = COLORS.CRATE_LIGHT;
-    ctx.fillRect(crate.x - half + 3, crate.y - half + 3, size - 6, 4);
+    ctx.fillRect(crate.x - half + 2, crate.y - half + 2, size - 4, 3);
   }
 }
 
@@ -382,11 +388,6 @@ function renderPlayers(ctx: CanvasRenderingContext2D, players: Map<number, Playe
     const isCurrent = player.id === currentId;
     const colors = COLORS.PACMAN[player.id % COLORS.PACMAN.length];
 
-    if (player.inBush && !isCurrent) return;
-
-    const alpha = player.inBush ? 0.6 : 1;
-    ctx.globalAlpha = alpha;
-
     // Shadow
     ctx.fillStyle = COLORS.SHADOW;
     ctx.beginPath();
@@ -430,7 +431,6 @@ function renderPlayers(ctx: CanvasRenderingContext2D, players: Map<number, Playe
     ctx.fill();
 
     ctx.restore();
-    ctx.globalAlpha = 1;
 
     // Health bar
     const barWidth = 50;
@@ -466,67 +466,80 @@ function renderPlayers(ctx: CanvasRenderingContext2D, players: Map<number, Playe
 }
 
 function renderBorder(ctx: CanvasRenderingContext2D): void {
+  // Outer border
   ctx.strokeStyle = "#2d1810";
-  ctx.lineWidth = 20;
-  ctx.strokeRect(-10, -10, MAP.WIDTH + 20, MAP.HEIGHT + 20);
+  ctx.lineWidth = 16;
+  ctx.strokeRect(-8, -8, MAP.WIDTH + 16, MAP.HEIGHT + 16);
 
+  // Middle border
   ctx.strokeStyle = "#4a2c17";
-  ctx.lineWidth = 10;
-  ctx.strokeRect(-5, -5, MAP.WIDTH + 10, MAP.HEIGHT + 10);
+  ctx.lineWidth = 8;
+  ctx.strokeRect(-4, -4, MAP.WIDTH + 8, MAP.HEIGHT + 8);
 
+  // Inner border
   ctx.strokeStyle = "#6b3d1f";
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 3;
   ctx.strokeRect(0, 0, MAP.WIDTH, MAP.HEIGHT);
 }
 
 function renderMinimap(ctx: CanvasRenderingContext2D, state: GameState, canvasWidth: number, canvasHeight: number): void {
   const mapSize = 150;
-  const mapX = canvasWidth - mapSize - 20;
-  const mapY = 20;
+  const mapX = canvasWidth - mapSize - 15;
+  const mapY = 15;
   const scale = mapSize / MAP.WIDTH;
+  const mapHeight = mapSize * (MAP.HEIGHT / MAP.WIDTH);
 
+  // Background
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.beginPath();
-  ctx.roundRect(mapX - 5, mapY - 5, mapSize + 10, mapSize * (MAP.HEIGHT / MAP.WIDTH) + 10, 8);
+  ctx.roundRect(mapX - 4, mapY - 4, mapSize + 8, mapHeight + 8, 6);
   ctx.fill();
 
+  // Map ground
   ctx.fillStyle = COLORS.GROUND_BASE;
-  ctx.fillRect(mapX, mapY, mapSize, mapSize * (MAP.HEIGHT / MAP.WIDTH));
+  ctx.fillRect(mapX, mapY, mapSize, mapHeight);
 
+  // Water
   ctx.fillStyle = COLORS.WATER_MID;
   for (const water of ARENA_MAP.water) {
     ctx.fillRect(mapX + water.x * scale, mapY + water.y * scale, water.width * scale, water.height * scale);
   }
 
+  // Walls
   ctx.fillStyle = COLORS.WALL_STONE;
   for (const wall of ARENA_MAP.walls) {
     ctx.fillRect(mapX + wall.x * scale, mapY + wall.y * scale, wall.width * scale, wall.height * scale);
   }
 
+  // Bushes
   ctx.fillStyle = COLORS.BUSH_MID;
   for (const bush of ARENA_MAP.bushes) {
     ctx.beginPath();
-    ctx.arc(mapX + bush.x * scale, mapY + bush.y * scale, bush.radius * scale, 0, Math.PI * 2);
+    ctx.arc(mapX + bush.x * scale, mapY + bush.y * scale, Math.max(bush.radius * scale, 3), 0, Math.PI * 2);
     ctx.fill();
   }
 
+  // Players
   state.players.forEach((player) => {
     const colors = COLORS.PACMAN[player.id % COLORS.PACMAN.length];
     const isCurrent = player.id === state.playerId;
+    const px = mapX + player.position.x * scale;
+    const py = mapY + player.position.y * scale;
 
     ctx.fillStyle = isCurrent ? "#ffd700" : colors.body;
     ctx.beginPath();
-    ctx.arc(mapX + player.position.x * scale, mapY + player.position.y * scale, isCurrent ? 5 : 4, 0, Math.PI * 2);
+    ctx.arc(px, py, isCurrent ? 5 : 4, 0, Math.PI * 2);
     ctx.fill();
 
     if (isCurrent) {
       ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
     }
   });
 
+  // Border
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
-  ctx.strokeRect(mapX, mapY, mapSize, mapSize * (MAP.HEIGHT / MAP.WIDTH));
+  ctx.strokeRect(mapX, mapY, mapSize, mapHeight);
 }

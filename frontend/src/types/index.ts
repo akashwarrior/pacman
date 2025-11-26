@@ -51,11 +51,6 @@ export interface Crate {
   health: number;
 }
 
-export interface SpawnPoint {
-  x: number;
-  y: number;
-}
-
 export interface GameMap {
   width: number;
   height: number;
@@ -66,7 +61,6 @@ export interface GameMap {
   trees: Tree[];
   rocks: Rock[];
   crates: Crate[];
-  spawnPoints: SpawnPoint[];
 }
 
 export interface GameState {

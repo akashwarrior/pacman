@@ -287,7 +287,6 @@ func (r *Room) onMove(msg *pb.Message) {
 	angle := normalizeAngle(movement)
 	newPos := calculatePosition(player.Position, angle, PlayerSpeed)
 
-	inBush := isInBush(newPos)
 	collided := checkCollision(PlayerSize, newPos)
 
 	rotation := player.Rotation
@@ -296,7 +295,6 @@ func (r *Room) onMove(msg *pb.Message) {
 	}
 
 	msg.Payload.Rotation = &rotation
-	msg.Payload.InBush = &inBush
 
 	if collided {
 		msg.Payload.Position = player.Position
@@ -308,7 +306,6 @@ func (r *Room) onMove(msg *pb.Message) {
 
 	player.Position = msg.Payload.Position
 	player.Rotation = rotation
-	player.InBush = inBush
 }
 
 func (r *Room) onKick(msg *pb.Message) {

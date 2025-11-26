@@ -53,7 +53,7 @@ export function useGame() {
       setState({ ...stateRef.current });
     };
 
-    const handleMove = (data: { position?: { x: number; y: number }; rotation?: number; inBush?: boolean; inGrass?: boolean }, id?: number) => {
+    const handleMove = (data: { position?: { x: number; y: number }; rotation?: number }, id?: number) => {
       if (id === undefined || !data.position) return;
 
       const player = stateRef.current.players.get(id);
@@ -63,7 +63,6 @@ export function useGame() {
         ...player,
         position: data.position,
         rotation: data.rotation ?? player.rotation,
-        inBush: data.inBush ?? data.inGrass ?? player.inBush,
       };
       stateRef.current.players.set(id, updated);
       if (id === playerId) setCurrentPlayer(updated);

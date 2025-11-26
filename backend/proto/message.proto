@@ -25,7 +25,6 @@ message Player {
   string color = 3;
   Position position = 4;
   bool is_ready = 5;
-  bool in_bush = 6;
   double rotation = 7;
   int32 kills = 8;
   int32 health = 9;
@@ -38,7 +37,6 @@ message Payload {
   optional Position position = 2;
   optional Bullet bullet = 3;
   optional bool is_ready = 5;
-  optional bool in_bush = 6;
   optional int32 health = 7;
   optional double rotation = 8;
   optional int32 kills = 9;
