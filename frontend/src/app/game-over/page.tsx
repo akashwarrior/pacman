@@ -4,8 +4,9 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, Skull, Zap } from "lucide-react";
+import { Suspense } from "react";
 
-export default function GameOverContent() {
+function GameOverContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -84,4 +85,10 @@ export default function GameOverContent() {
       </div>
     </motion.div>
   );
+}
+
+export default function GameOverPage() {
+  return <Suspense>
+    <GameOverContent />
+  </Suspense>
 }
