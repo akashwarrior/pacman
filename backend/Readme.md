@@ -1,4 +1,4 @@
-# Battle Arena Game Server
+# Pacman Game Server
 
 Real-time multiplayer game server in Go.
 
