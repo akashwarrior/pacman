@@ -114,6 +114,7 @@ func NewRoom(hostName, hostColor string) *Room {
 	}
 	player := NewPlayer(0, hostName, hostColor)
 	player.Position = getSpawnPosition(0)
+	player.IsReady = true
 	room.players[0] = player
 	return room
 }
@@ -367,14 +368,17 @@ func (r *Room) onShoot(msg *pb.Message) {
 	r.broadcast(msg)
 }
 
+const tickBulletBroadcastID int32 = 255
+
 func (r *Room) tick() {
-	if len(r.bullets) == 0 {
+	n := len(r.bullets)
+	if n == 0 {
 		return
 	}
 
-	active := make([]*pb.Bullet, 0, len(r.bullets))
-
-	for _, bullet := range r.bullets {
+	write := 0
+	for i := 0; i < n; i++ {
+		bullet := r.bullets[i]
 		if bullet.Expired {
 			continue
 		}
@@ -391,18 +395,18 @@ func (r *Room) tick() {
 
 		if !bullet.Expired {
 			bullet.Position = newPos
-			active = append(active, bullet)
+			r.bullets[write] = bullet
+			write++
 		}
 
-		var id int32 = 255
+		msgID := tickBulletBroadcastID
 		r.broadcast(&pb.Message{
-			Id:      &id,
+			Id:      &msgID,
 			Event:   EventShoot,
 			Payload: &pb.Payload{Bullet: bullet},
 		})
 	}
-
-	r.bullets = active
+	r.bullets = r.bullets[:write]
 
 	if r.aliveCount() <= 1 {
 		r.endGame()
@@ -533,22 +537,26 @@ func (r *Room) aliveCount() int {
 }
 
 func (r *Room) broadcast(msg *pb.Message) {
-	data, err := proto.Marshal(msg)
-	if err != nil {
+	data, ok := marshalToWS(msg)
+	if !ok {
 		return
 	}
 	for _, p := range r.players {
 		if p != nil && p.conn != nil {
-			wsutil.WriteServerBinary(*p.conn, data)
+			_ = wsutil.WriteServerBinary(*p.conn, data)
 		}
 	}
+	releaseWSMarshalBuf(data)
 }
 
 func (r *Room) sendTo(p *Player, msg *pb.Message) {
 	if p.conn == nil {
 		return
 	}
-	if data, err := proto.Marshal(msg); err == nil {
-		wsutil.WriteServerBinary(*p.conn, data)
+	data, ok := marshalToWS(msg)
+	if !ok {
+		return
 	}
+	_ = wsutil.WriteServerBinary(*p.conn, data)
+	releaseWSMarshalBuf(data)
 }

@@ -108,6 +108,7 @@ func handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse(w, http.StatusCreated, map[string]int32{
 		"playerId": int32(resp.PlayerID),
+		"roomId":   int32(roomID),
 	})
 }
 

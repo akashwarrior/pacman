@@ -2,96 +2,177 @@
 
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { useRoom } from "@/hooks/useRoom";
+import Link from "next/link";
+import { useRoom } from "@/hooks/use-room";
 import { Button } from "@/components/ui/button";
-import { MIN_PLAYERS_TO_START } from "@/lib/constants/game";
-import { Crown, Check, X, Users, Play, LogOut, Copy } from "lucide-react";
+import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from "@/lib/constants/game";
+import {
+  Crown,
+  Check,
+  X,
+  Users,
+  Play,
+  LogOut,
+  Copy,
+  ChevronLeft,
+  Hash,
+  Loader2,
+} from "lucide-react";
 
 export default function RoomPage() {
-  const { players, roomId, isHost, currentPlayer, toggleReady, startGame, kickPlayer, leave } = useRoom();
+  const {
+    players,
+    roomId,
+    isHost,
+    currentPlayer,
+    connectionState,
+    isTogglingReady,
+    isStartingGame,
+    canStartGame,
+    toggleReady,
+    startGame,
+    kickPlayer,
+    leave,
+  } = useRoom();
 
-  const readyPlayers = players.filter(p => p.isReady).length;
-  const allReady = readyPlayers === players.length;
+  const readyPlayers = players.filter((p) => p.isReady).length;
+  const missingReadyPlayers = Math.max(0, players.length - readyPlayers);
+  const isConnected = connectionState.status === "connected";
+  const missingPlayersToStart = Math.max(0, MIN_PLAYERS_TO_START - players.length);
 
-  const copyRoomId = () => {
+  const copyRoomId = async () => {
     if (roomId) {
-      navigator.clipboard.writeText(roomId.toString());
-      toast.success("Room ID copied!");
+      try {
+        await navigator.clipboard.writeText(roomId.toString());
+        toast.success("Room ID copied!");
+      } catch {
+        toast.error("Failed to copy room ID");
+      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center w-full">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md"
-      >
-        <div className="bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-white/10">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h1 className="text-lg sm:text-xl font-bold text-white">Game Lobby</h1>
+    <div className="relative z-10 flex min-h-[calc(100vh-60px)] w-full flex-col items-center justify-center px-4 py-8 sm:min-h-[calc(100vh-80px)] text-white font-sans">
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex justify-start">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/50 transition-colors hover:text-white"
+          >
+            <ChevronLeft className="size-4" strokeWidth={2.5} />
+            Back to Base
+          </Link>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98, y: 14 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-full overflow-hidden rounded-4xl border border-white/8 bg-[#020306]/80 shadow-[0_32px_64px_rgba(0,0,0,0.8)] backdrop-blur-3xl"
+        >
+          <div className="pointer-events-none absolute inset-0 rounded-4xl border border-white/5 mix-blend-overlay" />
+
+          <div className="relative border-b border-white/5 p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="size-1.5 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.8)]" />
+                  <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                    Arena Lobby
+                  </h1>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs font-medium text-white/40">
+                  <Users className="size-4 text-white/30" strokeWidth={2} />
+                  <span>
+                    {players.length}/{MAX_PLAYERS} Enrolled <span className="mx-1.5 opacity-30">|</span> Min {MIN_PLAYERS_TO_START}
+                  </span>
+                </div>
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">
+                  Network: {connectionState.status}
+                </p>
+              </div>
+              
               <button
+                type="button"
                 onClick={copyRoomId}
-                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+                className="group flex flex-col items-end gap-1"
               >
-                <span className="text-blue-400 font-mono text-xs sm:text-sm">#{roomId}</span>
-                <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/50" />
+                <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-1.5 transition-colors group-hover:bg-white/6">
+                  <Hash className="size-3 text-white/30" strokeWidth={2.5} />
+                  <span className="font-mono text-sm font-semibold tracking-wider text-white/90">{roomId}</span>
+                </div>
+                <div className="flex items-center gap-1.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/50">Copy ID</span>
+                  <Copy className="size-3 text-white/30" strokeWidth={2} />
+                </div>
               </button>
-            </div>
-            <div className="flex items-center gap-2 text-white/50 text-xs sm:text-sm">
-              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>{players.length}/{Math.max(players.length, MIN_PLAYERS_TO_START)} players</span>
             </div>
           </div>
 
-          <div className="p-3 sm:p-4 space-y-2 max-h-60 sm:max-h-80 overflow-y-auto">
+          <div className="relative max-h-[45vh] space-y-2.5 overflow-y-auto p-4 sm:max-h-88 sm:p-6">
             <AnimatePresence mode="popLayout">
               {players.map((player, i) => (
                 <motion.div
                   key={player.id}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: i * 0.05 }}
-                  className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg sm:rounded-xl border ${player.id === currentPlayer?.id
-                    ? "bg-blue-500/10 border-blue-500/30"
-                    : "bg-white/5 border-white/10"
-                    }`}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: i * 0.04, duration: 0.3, ease: "easeOut" }}
+                  className={`flex items-center justify-between gap-3 rounded-2xl border p-3.5 sm:p-4 transition-colors ${
+                    player.id === currentPlayer?.id
+                      ? "border-sky-500/30 bg-sky-500/4"
+                      : "border-white/4 bg-white/2"
+                  }`}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex min-w-0 items-center gap-3.5">
                     <div
-                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-white/10 sm:size-11 shadow-inner"
                       style={{ backgroundColor: player.color }}
                     >
-                      {player.id === 0 && <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-white drop-shadow" />}
+                      {player.id === 0 && <Crown className="size-4 text-white/90 drop-shadow-md" strokeWidth={2.5} />}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="text-white font-medium text-sm sm:text-base">{player.name}</span>
+                    <div className="min-w-0 flex flex-col justify-center">
+                      <div className="flex items-center gap-2.5">
+                        <span className="truncate text-sm font-semibold text-white/90">{player.name}</span>
                         {player.id === currentPlayer?.id && (
-                          <span className="text-[8px] sm:text-[10px] text-blue-400 bg-blue-500/20 px-1 sm:px-1.5 py-0.5 rounded">YOU</span>
+                          <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sky-300">
+                            You
+                          </span>
                         )}
                       </div>
-                      <span className="text-[10px] sm:text-xs text-white/40">{player.id === 0 ? "Host" : `Player ${player.id + 1}`}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-white/30 mt-0.5 font-medium">
+                        {player.id === 0 ? "Host Commander" : `Operative ${player.id + 1}`}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs ${player.isReady
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-white/10 text-white/50"
-                      }`}>
-                      {player.isReady ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-current animate-pulse" />}
-                      <span className="hidden sm:inline">{player.isReady ? "Ready" : "Waiting"}</span>
-                    </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {player.id === 0 && <div className="flex flex-col items-end gap-1">
+                      {player.isReady ? (
+                        <div className="flex items-center gap-1.5 text-emerald-400">
+                          <Check className="size-4" strokeWidth={2.5} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Ready</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-white/30">
+                          <span className="size-1.5 animate-pulse rounded-full bg-current" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Waiting</span>
+                        </div>
+                      )}
+                    </div>}
+
+                    {isHost && player.id !== 0 && (
+                      <div className="ml-1 h-8 w-px bg-white/5" />
+                    )}
 
                     {isHost && player.id !== 0 && (
                       <button
+                        type="button"
                         onClick={() => kickPlayer(player.id)}
-                        className="p-1 sm:p-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="rounded-xl p-2 text-white/20 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+                        aria-label="Remove player"
                       >
-                        <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <X className="size-4" strokeWidth={2.5} />
                       </button>
                     )}
                   </div>
@@ -100,61 +181,78 @@ export default function RoomPage() {
             </AnimatePresence>
 
             {players.length === 0 && (
-              <div className="text-center py-8 text-white/30 text-sm">
-                Waiting for players...
+              <div className="py-14 text-center">
+                <div className="mx-auto mb-3 size-6 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/30">Awaiting Connections</p>
               </div>
             )}
           </div>
 
-          <div className="p-3 sm:p-4 border-t border-white/10 space-y-2 sm:space-y-3">
+          <div className="relative space-y-3 border-t border-white/5 p-5 sm:p-6 bg-white/1">
             {isHost ? (
-              <Button
-                onClick={startGame}
-                disabled={!allReady}
-                className="w-full h-10 sm:h-12 text-sm sm:text-base"
-                size="lg"
+              <Button 
+                onClick={startGame} 
+                disabled={!canStartGame || !isConnected || isStartingGame}
+                className={`h-14 w-full rounded-xl text-sm font-semibold tracking-wide transition-all ${canStartGame && isConnected ? "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-white/5 text-white/30"}`}
               >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                {allReady ? "Start Game" : `Need ${players.length - readyPlayers} more ready`}
+                {isStartingGame ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" strokeWidth={2.5} />
+                    Syncing Match
+                  </>
+                ) : canStartGame ? (
+                  <>
+                    <Play className="mr-2 size-4" strokeWidth={2.5} fill="currentColor" />
+                    Commence Match
+                  </>
+                ) : (
+                  missingPlayersToStart > 0
+                    ? `Need ${missingPlayersToStart} More Operative${missingPlayersToStart > 1 ? "s" : ""}`
+                    : `Waiting on ${missingReadyPlayers} Operatives`
+                )}
               </Button>
             ) : (
               <Button
                 onClick={toggleReady}
-                variant={currentPlayer?.isReady ? "secondary" : "default"}
-                className="w-full h-10 sm:h-12 text-sm sm:text-base"
-                size="lg"
+                disabled={!isConnected || isTogglingReady}
+                className={`h-14 w-full rounded-xl text-sm font-semibold tracking-wide transition-all ${currentPlayer?.isReady ? "bg-white/10 text-white hover:bg-white/15" : "bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.2)]"}`}
               >
-                {currentPlayer?.isReady ? (
+                {isTogglingReady ? (
                   <>
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Cancel Ready
+                    <Loader2 className="mr-2 size-4 animate-spin" strokeWidth={2.5} />
+                    Updating Status
+                  </>
+                ) : currentPlayer?.isReady ? (
+                  <>
+                    <X className="mr-2 size-4" strokeWidth={2.5} />
+                    Stand Down
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Ready Up
+                    <Check className="mr-2 size-4" strokeWidth={2.5} />
+                    Ready Execution
                   </>
                 )}
               </Button>
             )}
 
-            {isHost && (
-              <Button onClick={toggleReady} variant="secondary" className="w-full h-9 sm:h-10 text-sm">
-                {currentPlayer?.isReady ? "Cancel Ready" : "Ready Up"}
-              </Button>
+            {!isConnected && (
+              <p className="text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-300/70">
+                {connectionState.reason ?? "Realtime connection unavailable"}
+              </p>
             )}
 
             <Button
               onClick={leave}
               variant="ghost"
-              className="w-full h-9 sm:h-10 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="h-12 w-full text-xs font-semibold uppercase tracking-widest text-white/30 hover:bg-white/5 hover:text-white/70"
             >
-              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Leave Room
+              <LogOut className="mr-2 size-3.5" strokeWidth={2} />
+              Disconnect
             </Button>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }

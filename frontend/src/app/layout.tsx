@@ -1,28 +1,16 @@
 import type { Metadata } from "next";
-import { Host_Grotesk } from "next/font/google";
-import { Background } from "@/components/background";
+import { AnimatedBackground } from "@/components/animated-background";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-
-const font = Host_Grotesk({
-  subsets: ["latin"],
-  preload: true,
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Pacman Arena",
   description:
     "Multiplayer Pacman: move, shoot, and survive. Last one standing wins.",
   icons: {
-    icon: "/pacman.png",
+    icon: "/pacman.webp",
   },
   keywords: ["pacman", "multiplayer", "shooter", "arena", "ghosts", "survival"],
-  openGraph: {
-    title: "Pacman Arena",
-    description: "Multiplayer Pacman: move, shoot, and survive.",
-    type: "website",
-  },
 };
 
 export default function RootLayout({
@@ -30,8 +18,8 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${font.className} antialiased`}>
-        <Background />
+      <body className="antialiased">
+        <AnimatedBackground />
         {children}
         <Toaster position="top-right" expand={false} richColors />
       </body>

@@ -1,89 +1,83 @@
 # Pacman Frontend
 
-Next.js frontend for Pacman - a real-time multiplayer arena shooter.
+Production-ready Next.js frontend for a real-time multiplayer Pacman arena shooter.
+
+## Stack
+
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS 4
+- Motion (UI animation)
+- WebSocket + protobuf transport
 
 ## Features
 
-- **Real-time Rendering** - 60fps Canvas 2D game loop
-- **WebSocket Integration** - Binary protobuf communication
-- **Responsive UI** - Tailwind CSS with animations
-- **Type Safety** - Full TypeScript implementation
-
-## Tech Stack
-
-- **Next.js 16** with App Router
-- **React 19** with React Compiler
-- **TypeScript 5**
-- **Tailwind CSS 4**
-- **Motion** (Framer Motion) for UI animations
-- **Protocol Buffers** for WebSocket messages
+- Real-time canvas rendering loop with camera, minimap, and game effects
+- Lobby flow (create/join room, ready state, host controls)
+- Stronger runtime state handling:
+  - Loading states for room and game routes
+  - Route-level and global error boundaries
+  - Connection status tracking and disconnect handling
+- Environment validation for backend and WebSocket URLs
 
 ## Project Structure
 
 ```
 src/
-├── app/                # Pages (home, room, game, game-over)
-├── components/         # UI components
-├── hooks/              # useGame, useRoom hooks
+├── app/
+│   ├── game/[gameId]/
+│   ├── room/[roomId]/
+│   ├── game-over/
+│   └── ...
+├── components/
+├── hooks/
 ├── lib/
-│   ├── renderer.ts     # Canvas game renderer
-│   ├── constants/      # Game config & colors
-│   └── utils.ts        # Utilities
+│   ├── constants/
+│   ├── render/
+│   ├── env.ts
+│   └── ...
 ├── services/
-│   ├── api.ts          # REST API client
-│   └── socket.ts       # WebSocket manager
+│   ├── room-api.ts
+│   └── socket-manager.ts
 └── types/
-    ├── index.ts        # Game types
-    ├── message.ts      # Generated protobuf
-    └── message.proto   # Protobuf definition
 ```
 
-## Getting Started
+## Environment Variables
 
-### Prerequisites
-
-- Node.js 18+ or pnpm
-
-### Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Set up environment
-cp .env.example .env.local
-
-# Start dev server
-pnpm dev
-```
-
-### Environment Variables
+Copy `.env.example` to `.env.local`.
 
 ```env
-# Backend API URL
 NEXT_PUBLIC_BACKEND_URL="http://localhost:8080"
-
-# WebSocket URL
 NEXT_PUBLIC_WS_URL="ws://localhost:8080/api/play"
 ```
 
+Notes:
+- `NEXT_PUBLIC_BACKEND_URL` must be `http://` or `https://`.
+- `NEXT_PUBLIC_WS_URL` must be `ws://` or `wss://`.
+
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start development server |
-| `pnpm build` | Build for production |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
+- `pnpm dev` - run development server
+- `pnpm lint` - ESLint checks
+- `pnpm build` - production build
+- `pnpm start` - run built app
 
-## Game Controls
+## Local Development
 
-- **WASD / Arrow Keys** - Move player
-- **Space** - Shoot bullets
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
 
-## Customization
+## Deployment Checklist
 
-- **Game Constants**: `src/lib/constants/game.ts`
-- **Colors**: `src/lib/constants/colors.ts`
-- **Renderer**: `src/lib/renderer.ts`
-- **Arena Map**: `public/map/arena.json`
+1. Set production environment variables.
+2. Run `pnpm build`.
+4. Deploy with `pnpm start` (or your platform's Next.js runtime).
+5. Verify backend/WebSocket endpoints are reachable from the deployed domain.
+
+## Controls
+
+- `WASD` / Arrow keys: move
+- `Space`: shoot

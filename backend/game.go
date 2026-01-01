@@ -22,15 +22,21 @@ const (
 )
 
 type GameMap struct {
-	Width  int     `json:"width"`
-	Height int     `json:"height"`
-	Theme  string  `json:"theme"`
-	Walls  []Wall  `json:"walls"`
-	Water  []Water `json:"water"`
-	Bushes []Bush  `json:"bushes"`
-	Trees  []Tree  `json:"trees"`
-	Rocks  []Rock  `json:"rocks"`
-	Crates []Crate `json:"crates"`
+	Width       int         `json:"width"`
+	Height      int         `json:"height"`
+	Theme       string      `json:"theme"`
+	SpawnPoints []SpawnPoint `json:"spawnPoints"`
+	Walls       []Wall      `json:"walls"`
+	Water       []Water     `json:"water"`
+	Bushes      []Bush      `json:"bushes"`
+	Trees       []Tree      `json:"trees"`
+	Rocks       []Rock      `json:"rocks"`
+	Crates      []Crate     `json:"crates"`
+}
+
+type SpawnPoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type Wall struct{ X, Y, Width, Height, Variant int }
@@ -51,10 +57,27 @@ func loadMap(path string) error {
 }
 
 func getSpawnPosition(index int) *pb.Position {
-	return &pb.Position{
-		X: float64(gameMap.Width/(index+1)) - 200,
-		Y: float64(gameMap.Height/(index+1)) - 200,
+	n := len(gameMap.SpawnPoints)
+	if n == 0 {
+		return &pb.Position{
+			X: float64(gameMap.Width)/2 - 100,
+			Y: float64(gameMap.Height)/2 - 100,
+		}
 	}
+
+	try := func(i int) *pb.Position {
+		sp := gameMap.SpawnPoints[i%n]
+		return &pb.Position{X: sp.X, Y: sp.Y}
+	}
+
+	for offset := 0; offset < n; offset++ {
+		pos := try(index + offset)
+		if !checkCollision(PlayerSize, pos) {
+			return pos
+		}
+	}
+
+	return try(index)
 }
 
 func calculatePosition(pos *pb.Position, angle, speed float64) *pb.Position {

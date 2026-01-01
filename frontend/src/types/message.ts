@@ -62,12 +62,8 @@ function createBasePosition(): Position {
 
 export const Position: MessageFns<Position> = {
   encode(message: Position, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.x !== 0) {
-      writer.uint32(9).double(message.x);
-    }
-    if (message.y !== 0) {
-      writer.uint32(17).double(message.y);
-    }
+    writer.uint32(9).double(message.x);
+    writer.uint32(17).double(message.y);
     return writer;
   },
 

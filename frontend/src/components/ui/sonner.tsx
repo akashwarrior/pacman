@@ -9,10 +9,6 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-/**
- * Toaster component for displaying toast notifications
- * Configured with dark theme for the game aesthetic
- */
 export function Toaster(props: ToasterProps) {
   return (
     <Sonner

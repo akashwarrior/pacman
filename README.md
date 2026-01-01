@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/pacman.png" alt="Pacman" width="80"/>
+  <img src="frontend/public/pacman.webp" alt="Pacman" width="80"/>
 </p>
 
 <h1 align="center">Pacman</h1>

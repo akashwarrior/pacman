@@ -2,7 +2,9 @@
 @import "tw-animate-css";
 
 :root {
-  /* Base theme colors */
+  --background: 230 35% 5%;
+  --foreground: 210 40% 98%;
+
   --muted: 230 25% 10%;
   --muted-foreground: 210 40% 60%;
   --accent: 230 50% 15%;
@@ -22,13 +24,11 @@
   --ring: 230 100% 65%;
   --radius: 1rem;
 
-  /* Game theme colors */
   --neon-blue: 230 100% 65%;
   --neon-purple: 280 100% 65%;
   --neon-pink: 330 100% 65%;
   --neon-yellow: 50 100% 65%;
 
-  /* Gradient stops */
   --gradient-1: hsl(var(--neon-blue));
   --gradient-2: hsl(var(--neon-purple));
   --gradient-3: hsl(var(--neon-pink));
@@ -40,22 +40,22 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 }
 
 @layer base {
@@ -65,7 +65,7 @@
 
   body,
   html {
-    @apply bg-black relative min-h-full flex flex-col items-center h-full w-full;
+    @apply relative flex h-full min-h-full w-full flex-col items-center bg-black text-foreground;
   }
 
   *,
@@ -77,21 +77,6 @@
   }
 }
 
-@keyframes pulse-slow {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(0.97);
-  }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 3s ease-in-out infinite;
-}
 
 .drop-shadow-glow {
   filter: drop-shadow(0 0 8px currentColor);
